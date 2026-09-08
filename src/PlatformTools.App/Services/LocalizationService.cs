@@ -30,7 +30,12 @@ public static class LocalizationService
         ["例如 8080 或 http://localhost:8080"]="For example: 8080 or http://localhost:8080", ["例如 platform-tools"]="For example: platform-tools", ["例如 demo.example.com"]="For example: demo.example.com", ["API Token（仅在内存中使用，不会保存）"]="API Token (memory only; never saved)", ["允许的邮箱，多个邮箱用逗号分隔"]="Allowed emails, separated by commas", ["在这里粘贴分享码"]="Paste a share code here", ["复制连接命令"]="Copy connection command",
         ["cloudflared 版本"]="cloudflared version", ["正在读取…"]="Reading…", ["检查更新"]="Check for updates", ["凭据安全"]="Credential security", ["API Token 仅在当前操作的内存中使用，操作后立即清空；不会写入配置或分享文件。cloudflared 账户凭据保存在当前系统用户目录。"]="API tokens are held in memory only and cleared after each operation. They are never written to settings or share files. cloudflared account credentials stay in the current user's profile."
     };
-    private static readonly Dictionary<string, string> EnToZh = ZhToEn.ToDictionary(x => x.Value, x => x.Key, StringComparer.Ordinal);
+    // Several controls intentionally share the same English caption (for example the
+    // navigation item and action button both use "Publish"). Keep the first Chinese
+    // caption for reverse lookup instead of throwing during type initialization.
+    private static readonly Dictionary<string, string> EnToZh = ZhToEn
+        .GroupBy(x => x.Value, StringComparer.Ordinal)
+        .ToDictionary(group => group.Key, group => group.First().Key, StringComparer.Ordinal);
     public static bool IsEnglish { get; private set; }
     public static string T(string chinese, string english) => IsEnglish ? english : chinese;
 

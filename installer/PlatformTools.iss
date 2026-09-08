@@ -19,7 +19,6 @@ PrivilegesRequired=lowest
 UninstallDisplayIcon={app}\PlatformTools.exe
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
-Name: "chinesesimp"; MessagesFile: "compiler:Languages\ChineseSimplified.isl"
 [Files]
 Source: "{#MySource}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 [Icons]
