@@ -10,7 +10,13 @@ public partial class HomeView : UserControl
 {
     public event EventHandler? PublishRequested;
     public event EventHandler? ConnectRequested;
-    public HomeView() { InitializeComponent(); RefreshRecents(); AppSettingsService.Current.Changed += (_, _) => RefreshRecents(); }
+    public HomeView()
+    {
+        InitializeComponent(); RefreshRecents();
+        AppSettingsService.Current.Changed += (_, _) => RefreshRecents();
+        PublishedServiceManager.Current.Changed += (_, _) => ServiceSummary.Text = PublishedServiceManager.Current.Summary;
+        ServiceSummary.Text = PublishedServiceManager.Current.Summary;
+    }
     private void Publish_Click(object? sender, RoutedEventArgs e) => PublishRequested?.Invoke(this, EventArgs.Empty);
     private void Connect_Click(object? sender, RoutedEventArgs e) => ConnectRequested?.Invoke(this, EventArgs.Empty);
     public void RefreshRecents()

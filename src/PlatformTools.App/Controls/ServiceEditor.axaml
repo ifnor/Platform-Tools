@@ -1,0 +1,32 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="PlatformTools.App.Controls.ServiceEditor">
+  <Grid RowDefinitions="*,Auto" Margin="24">
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+      <StackPanel Spacing="16" Margin="0,0,12,16">
+        <TextBlock Text="服务配置" FontSize="24" FontWeight="SemiBold"/>
+        <StackPanel Spacing="6"><TextBlock Text="服务名称"/><TextBox x:Name="NameBox" PlaceholderText="例如 前端预览" MaxLength="100"/></StackPanel>
+        <StackPanel Spacing="6"><TextBlock Text="服务类型"/><ComboBox x:Name="ProtocolBox" SelectedIndex="0" SelectionChanged="Protocol_Changed" HorizontalAlignment="Stretch"><ComboBoxItem Content="HTTP / HTTPS（网页或 API）"/><ComboBoxItem Content="SSH"/><ComboBoxItem Content="远程桌面 RDP"/><ComboBoxItem Content="数据库 / TCP"/><ComboBoxItem Content="SMB 文件共享"/></ComboBox></StackPanel>
+        <StackPanel Spacing="6"><TextBlock Text="本地服务地址"/><TextBox x:Name="LocalUrlBox" Text="http://localhost:8080" PlaceholderText="例如 8080 或 http://localhost:8080"/></StackPanel>
+        <WrapPanel><RadioButton x:Name="QuickMode" Content="临时地址（无需登录）" IsChecked="True" GroupName="editor-mode" Click="Mode_Changed" Margin="0,0,18,0"/><RadioButton x:Name="NamedMode" Content="使用自己的域名" GroupName="editor-mode" Click="Mode_Changed"/></WrapPanel>
+        <TextBlock x:Name="QuickHint" Text="临时地址每次启动会重新生成；停止后失效。" Classes="muted" TextWrapping="Wrap" FontSize="12"/>
+        <StackPanel x:Name="NamedOptions" Spacing="14" IsVisible="False">
+          <TextBlock Text="请先在设置中登录 Cloudflare。每个服务使用独立的隧道和公网域名。" Classes="muted" TextWrapping="Wrap" FontSize="12"/>
+          <StackPanel Spacing="6"><TextBlock Text="隧道名称"/><TextBox x:Name="TunnelNameBox"/></StackPanel>
+          <StackPanel Spacing="6"><TextBlock Text="完整公网域名"/><TextBox x:Name="HostnameBox" PlaceholderText="例如 demo.example.com"/></StackPanel>
+          <StackPanel Spacing="6"><TextBlock Text="访问权限"/><ComboBox x:Name="AccessModeBox" SelectedIndex="0" SelectionChanged="AccessMode_Changed"><ComboBoxItem Content="公开访问"/><ComboBoxItem Content="身份保护"/></ComboBox></StackPanel>
+          <StackPanel x:Name="AccessOptions" Spacing="10" IsVisible="False">
+            <TextBox x:Name="AccountIdBox" PlaceholderText="Cloudflare Account ID（可留空）"/>
+            <TextBox x:Name="AllowedEmailsBox" PlaceholderText="允许的邮箱，多个邮箱用逗号分隔"/>
+            <TextBlock Text="启动时输入 API Token，仅在当前操作内存中使用。" Classes="muted" TextWrapping="Wrap" FontSize="12"/>
+          </StackPanel>
+          <StackPanel Spacing="6"><TextBlock Text="建议连接端口"/><NumericUpDown x:Name="SuggestedPortBox" Minimum="1" Maximum="65535" Value="8080"/></StackPanel>
+        </StackPanel>
+        <TextBlock x:Name="ErrorText" Foreground="#E88740" TextWrapping="Wrap"/>
+      </StackPanel>
+    </ScrollViewer>
+    <WrapPanel Grid.Row="1" HorizontalAlignment="Right">
+      <Button Classes="quiet" Content="取消" Click="Cancel_Click" Margin="0,0,10,0"/>
+      <Button Classes="secondary" Content="保存" Click="Save_Click" Margin="0,0,10,0"/>
+      <Button Classes="primary" Content="保存并启动" Click="SaveStart_Click"/>
+    </WrapPanel>
+  </Grid>
+</UserControl>

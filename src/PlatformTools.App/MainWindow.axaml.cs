@@ -13,6 +13,8 @@ public partial class MainWindow : Window
     private readonly PublishView _publish = new();
     private readonly ConnectView _connect = new();
     private readonly SettingsView _settings = new();
+    private bool _allowClose;
+    private bool _confirmingClose;
 
     public MainWindow()
     {
@@ -22,12 +24,13 @@ public partial class MainWindow : Window
         _home.PublishRequested += (_, _) => Navigate(_publish, PublishButton);
         _home.ConnectRequested += (_, _) => Navigate(_connect, ConnectButton);
         _publish.SettingsRequested += (_, _) => Navigate(_settings, SettingsButton);
-        _settings.LanguageChanged += (_, english) => { LocalizationService.SetLanguage(english, this, _home, _publish, _connect, _settings); RenderAccountState(); };
+        _settings.LanguageChanged += (_, english) => { LocalizationService.SetLanguage(english, this, _home, _publish, _connect, _settings); PublishedServiceManager.Current.RefreshLabels(); RenderAccountState(); };
         var saved = AppSettingsService.Current.Settings;
         var useEnglish = saved.Language == "en" || (saved.Language == "system" && !System.Globalization.CultureInfo.CurrentUICulture.Name.StartsWith("zh", System.StringComparison.OrdinalIgnoreCase));
         LocalizationService.SetLanguage(useEnglish, this, _home, _publish, _connect, _settings);
         if (Application.Current is { } app && saved.Theme != "system") app.RequestedThemeVariant = saved.Theme == "dark" ? ThemeVariant.Dark : ThemeVariant.Light;
         CloudflareAccountService.Current.Changed += AccountChanged;
+        Closing += ConfirmClosing;
         RenderAccountState();
         Closed += async (_, _) =>
         {
@@ -36,6 +39,31 @@ public partial class MainWindow : Window
             await _publish.StopAllAsync(); await _connect.StopAllAsync();
         };
         Opened += async (_, _) => await CloudflareAccountService.Current.RefreshAsync();
+    }
+
+    private async void ConfirmClosing(object? sender, WindowClosingEventArgs e)
+    {
+        if (_allowClose || !PublishedServiceManager.Current.HasActive) return;
+        e.Cancel = true;
+        if (_confirmingClose) return;
+        _confirmingClose = true;
+        try
+        {
+            if (!await Controls.ServiceDialogs.ConfirmAsync(this, LocalizationService.T("退出程序", "Exit application"),
+                LocalizationService.T("仍有服务正在运行或启动。退出会停止所有发布服务，是否继续？", "Services are still running or starting. Exiting will stop all published services. Continue?"),
+                LocalizationService.T("退出并停止", "Stop and exit"))) return;
+            IsEnabled = false;
+            await _publish.StopAllAsync();
+            await _connect.StopAllAsync();
+            _allowClose = true;
+            Close();
+        }
+        catch (System.Exception ex)
+        {
+            IsEnabled = true;
+            await Controls.ServiceDialogs.ConfirmAsync(this, LocalizationService.T("停止失败", "Could not stop services"), ex.Message, LocalizationService.T("确定", "OK"));
+        }
+        finally { _confirmingClose = false; }
     }
 
     private void AccountChanged(object? sender, System.EventArgs e) => Avalonia.Threading.Dispatcher.UIThread.Post(RenderAccountState);

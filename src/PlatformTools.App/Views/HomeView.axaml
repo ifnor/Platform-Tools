@@ -6,6 +6,7 @@
           <TextBlock Text="LOCAL TO WORLD" FontSize="11" FontWeight="SemiBold" LetterSpacing="2.5" Foreground="#3087EF"/>
           <TextBlock Text="让本地服务安全上线" FontSize="32" FontWeight="Bold" LetterSpacing="-0.7" TextWrapping="Wrap"/>
           <TextBlock Text="无需命令行，几步即可发布或连接服务" FontSize="14" Classes="muted" TextWrapping="Wrap"/>
+          <TextBlock x:Name="ServiceSummary" FontSize="12" Foreground="#3087EF" TextWrapping="Wrap"/>
         </StackPanel>
         <c:ConnectionIllustration Grid.Column="1" MaxWidth="350" Margin="4,0,0,0"/>
       </Grid>

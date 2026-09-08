@@ -14,6 +14,7 @@ public sealed class CloudflaredService : IAsyncDisposable
 
     public event EventHandler<string>? LogReceived;
     public event EventHandler<string>? PublicUrlReceived;
+    public event EventHandler<int>? Exited;
     public bool IsRunning => _process is { HasExited: false };
 
     public async Task StartQuickTunnelAsync(string localUrl, CancellationToken cancellationToken = default)
@@ -40,6 +41,8 @@ public sealed class CloudflaredService : IAsyncDisposable
         _process = new Process { StartInfo = startInfo, EnableRaisingEvents = true };
         _process.OutputDataReceived += HandleOutput;
         _process.ErrorDataReceived += HandleOutput;
+        var runningProcess = _process;
+        _process.Exited += (_, _) => { if (ReferenceEquals(_process, runningProcess)) Exited?.Invoke(this, runningProcess.ExitCode); };
         if (!_process.Start()) throw new InvalidOperationException("无法启动 cloudflared。 ");
         _process.BeginOutputReadLine();
         _process.BeginErrorReadLine();

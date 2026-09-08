@@ -6,6 +6,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Text.Json;
 using System.Threading.Tasks;
+using System.Threading;
 
 namespace PlatformTools.App.Services;
 
@@ -16,33 +17,60 @@ public sealed class NamedTunnelService : IAsyncDisposable
     private static readonly Regex TunnelIdPattern = new(@"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", RegexOptions.IgnoreCase | RegexOptions.Compiled);
     private Process? _process;
     public event EventHandler<string>? LogReceived;
+    public event EventHandler<int>? Exited;
     public bool IsRunning => _process is { HasExited: false };
 
-    public async Task<NamedTunnelResult> CreateAndStartAsync(string name, string hostname, string serviceUrl)
+    public async Task<NamedTunnelResult> PrepareAsync(string name, string hostname, string serviceUrl, CancellationToken cancellationToken = default)
     {
         await StopAsync();
-        var tunnelId = await FindTunnelIdAsync(name);
+        var tunnelId = await FindTunnelIdAsync(name, cancellationToken);
         if (string.IsNullOrWhiteSpace(tunnelId))
         {
-            var createOutput = await RunCommandAsync(["tunnel", "create", name]);
+            var createOutput = await RunCommandAsync(["tunnel", "create", name], cancellationToken: cancellationToken);
             tunnelId = TunnelIdPattern.Match(createOutput).Value;
             if (string.IsNullOrWhiteSpace(tunnelId)) throw new InvalidOperationException("隧道已创建，但没有找到隧道 ID。");
         }
 
         await EnsureCredentialsAsync(tunnelId,
             AppPaths.Current.CredentialsDirectory,
-            arguments => RunCommandAsync(arguments, logOutput: false));
+            arguments => RunCommandAsync(arguments, logOutput: false, cancellationToken: cancellationToken));
         var (configPath, accountId) = CreateConfig(tunnelId, hostname, serviceUrl);
-        await RunCommandAsync(["tunnel", "route", "dns", "--overwrite-dns", tunnelId, hostname]);
-        StartLongRunning(["tunnel", "--config", configPath, "run", tunnelId]);
+        await EnsureDnsRouteAsync(tunnelId, hostname,
+            arguments => RunCommandAsync(arguments, cancellationToken: cancellationToken));
+
         return new NamedTunnelResult(tunnelId, configPath, accountId);
     }
 
-    private async Task<string?> FindTunnelIdAsync(string name)
+    public async Task<NamedTunnelResult> CreateAndStartAsync(string name, string hostname, string serviceUrl)
+    {
+        var result = await PrepareAsync(name, hostname, serviceUrl);
+        StartPrepared(result);
+        return result;
+    }
+
+    public void StartPrepared(NamedTunnelResult result) => StartLongRunning(["tunnel", "--no-autoupdate", "--config", result.ConfigPath, "run", result.TunnelId]);
+
+    internal static async Task EnsureDnsRouteAsync(string tunnelId, string hostname, Func<string[], Task<string>> runCommand)
     {
         try
         {
-            var output = await RunCommandAsync(["tunnel", "list", "--output", "json"]);
+            // cloudflared treats an existing route to this same tunnel as success.
+            await runCommand(["tunnel", "route", "dns", tunnelId, hostname]);
+        }
+        catch (InvalidOperationException ex) when (
+            ex.Message.Contains("An A, AAAA, or CNAME record with that host already exists", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException(LocalizationService.T(
+                $"域名 {hostname} 已有 DNS 记录，无法绑定到当前隧道。请停止服务后编辑：改用未占用的子域名；若这是以前发布的服务，请填写原来的隧道名称。若要迁移此域名，请先在 Cloudflare DNS 中核对并将对应记录改为代理 CNAME，目标为 {tunnelId}.cfargotunnel.com，然后重试。原有 DNS 记录未被修改。",
+                $"{hostname} already has a DNS record and cannot be assigned to this tunnel. Edit the stopped service to use an unused hostname, or use the original tunnel name for a previously published service. To migrate this hostname, review its record in Cloudflare DNS and change it to a proxied CNAME targeting {tunnelId}.cfargotunnel.com, then retry. Existing DNS records were not changed."), ex);
+        }
+    }
+
+    private async Task<string?> FindTunnelIdAsync(string name, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var output = await RunCommandAsync(["tunnel", "list", "--output", "json"], cancellationToken: cancellationToken);
             using var json = JsonDocument.Parse(output);
             foreach (var item in json.RootElement.EnumerateArray())
                 if (item.TryGetProperty("name", out var tunnelName) && string.Equals(tunnelName.GetString(), name, StringComparison.OrdinalIgnoreCase)
@@ -93,14 +121,19 @@ public sealed class NamedTunnelService : IAsyncDisposable
         }
     }
 
-    private async Task<string> RunCommandAsync(string[] arguments, bool logOutput = true)
+    private async Task<string> RunCommandAsync(string[] arguments, bool logOutput = true, CancellationToken cancellationToken = default)
     {
         var info = CreateStartInfo(arguments);
         using var process = new Process { StartInfo = info };
         if (!process.Start()) throw new InvalidOperationException("无法启动 cloudflared。");
         var stdoutTask = process.StandardOutput.ReadToEndAsync();
         var stderrTask = process.StandardError.ReadToEndAsync();
-        await process.WaitForExitAsync();
+        try { await process.WaitForExitAsync(cancellationToken); }
+        finally
+        {
+            if (!process.HasExited) { process.Kill(entireProcessTree: true); await process.WaitForExitAsync(); }
+            await Task.WhenAll(stdoutTask, stderrTask);
+        }
         var stdout = await stdoutTask;
         var stderr = await stderrTask;
         if (logOutput) { Receive(stdout); Receive(stderr); }
@@ -112,6 +145,8 @@ public sealed class NamedTunnelService : IAsyncDisposable
     {
         _process = new Process { StartInfo = CreateStartInfo(arguments), EnableRaisingEvents = true };
         _process.OutputDataReceived += (_, e) => Receive(e.Data); _process.ErrorDataReceived += (_, e) => Receive(e.Data);
+        var runningProcess = _process;
+        _process.Exited += (_, _) => { if (ReferenceEquals(_process, runningProcess)) Exited?.Invoke(this, runningProcess.ExitCode); };
         if (!_process.Start()) throw new InvalidOperationException("无法运行命名隧道。");
         _process.BeginOutputReadLine(); _process.BeginErrorReadLine();
     }

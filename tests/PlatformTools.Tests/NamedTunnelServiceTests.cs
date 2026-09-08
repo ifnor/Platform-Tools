@@ -56,4 +56,39 @@ public sealed class NamedTunnelServiceTests : IDisposable
     {
         if (Directory.Exists(_directory)) Directory.Delete(_directory, recursive: true);
     }
+
+    [Fact]
+    public async Task ExistingRouteToSameTunnel_IsAcceptedWithoutOverwrite()
+    {
+        await NamedTunnelService.EnsureDnsRouteAsync(TunnelId, "app.example.com", arguments =>
+        {
+            Assert.Equal(new[] { "tunnel", "route", "dns", TunnelId, "app.example.com" }, arguments);
+            return Task.FromResult("app.example.com is already configured to route to your tunnel");
+        });
+    }
+
+    [Fact]
+    public async Task ConflictingDnsRecord_ExplainsRecoveryWithoutRetryingOrOverwriting()
+    {
+        var calls = 0;
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            NamedTunnelService.EnsureDnsRouteAsync(TunnelId, "app.example.com", _ =>
+            {
+                calls++;
+                throw new InvalidOperationException("Failed to add route: 1003: An A, AAAA, or CNAME record with that host already exists.");
+            }));
+        Assert.Equal(1, calls);
+        Assert.Contains("app.example.com", error.Message);
+        Assert.Contains(TunnelId + ".cfargotunnel.com", error.Message);
+        Assert.IsType<InvalidOperationException>(error.InnerException);
+    }
+
+    [Fact]
+    public async Task OtherRouteFailures_ArePreserved()
+    {
+        var original = new InvalidOperationException("Network unavailable");
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            NamedTunnelService.EnsureDnsRouteAsync(TunnelId, "app.example.com", _ => throw original));
+        Assert.Same(original, error);
+    }
 }

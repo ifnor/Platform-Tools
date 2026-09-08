@@ -15,12 +15,22 @@ Platform Tools is a beginner-friendly, cross-platform desktop interface for Clou
 ## Quick start for users
 
 1. Open **Platform Tools** and select **Publish a local service**.
-2. Choose the service type and confirm the local address.
-3. For a web service, choose **Temporary URL** and press **Publish**. Copy the generated address when it appears.
+2. Select **Add service**, enter a name, choose the service type, and confirm the local address.
+3. For a web service, choose **Temporary URL** and press **Save and start**. Copy the generated address from its service card when it appears.
 4. For an own-domain or non-HTTP service, open **Settings → Cloudflare account** and sign in in the browser. Check the displayed account status, then choose **Use my own domain**, enter a tunnel name and full hostname, and publish. The status in the top bar also opens Settings. Use **Refresh status** to verify saved credentials; a network verification failure does not remove them.
 5. Save the generated `.ptlink` file when another computer needs the Platform Tools connector.
 
 Non-HTTP services are not ordinary publicly exposed ports. Cloudflare requires `cloudflared` on the connecting computer. Platform Tools includes and controls it automatically. RDP opens Microsoft Remote Desktop on Windows; SSH and database modes display the local command/address to use.
+
+## Multiple published services
+
+Open **Publish → Add service** to save a service or save and start it. Each service has its own cloudflared process, connection state, public address, and bounded runtime log. Starting or stopping one service leaves the others running. A service is shown as running after cloudflared registers a connection; startup failure and unexpected process exit are shown per service.
+
+Configurations are saved in `config/services.json` and restored stopped (or pending deletion) after restarting the app. API tokens and runtime URLs are not saved there. Fixed-domain services must use distinct hostnames and tunnel names, and DNS records are not silently overwritten. Stop a service before editing it. Deleting a service asks for confirmation, stops it, removes the matching DNS CNAME and Cloudflare tunnel, and then removes its local tunnel credentials and service configuration. Conflicting DNS records belonging to other targets are preserved. Failed cleanup retains the service for retry and blocks editing/restarting it; deletion progress is saved in `config/deletions`. Once cloud cleanup is confirmed, retries only finish local cleanup and do not require network access or login. Read-only attributes on the selected tunnel files are cleared for deletion; shared credentials and filesystem permissions are unchanged. Use the original Cloudflare account and authorized zone. If login credentials lack cleanup permissions, the app requests a one-operation API token with Cloudflare Tunnel Edit, DNS Edit, and Zone Read permissions. Shared login credentials and Access applications/policies are retained. Exiting with active services asks for confirmation and stops all of them before closing.
+
+The home page shows service, running, and failure counts. Each running service can copy its address, copy a share code, or export a `.ptlink` file. Protected services request an Access API token at startup and reuse their existing Access application and policy when possible.
+
+If a hostname fails with “An A, AAAA, or CNAME record with that host already exists”, edit the stopped service to use an unused hostname, or restore the original tunnel name if this hostname belongs to a previously published service. An existing route to the same tunnel is accepted. To migrate a hostname intentionally, first review its current DNS record and dependencies in Cloudflare, then configure a proxied CNAME pointing to the tunnel target shown in the error message. The application does not overwrite conflicting DNS records automatically.
 
 ## Access protection
 
@@ -30,6 +40,7 @@ All persistent app data is stored in `config` beside the executable, independent
 
 - `config/.cloudflared/`: Cloudflare login certificate (`cert.pem`), tunnel credentials (`<tunnel-id>.json`), and client Access authorization cache.
 - `config/settings.json`: settings and recent connections.
+- `config/services.json`: saved service definitions, restored stopped on launch.
 - `config/tunnels/<tunnel-id>/config.yml`: generated tunnel configuration (regenerated when publishing after moving the application).
 
 On first use, missing settings and credentials are copied from the previous user-profile locations. Existing portable files take precedence, and the original files are retained. Keep the entire `config` directory when upgrading or moving the app; use a writable application directory. API tokens are still kept only in memory. The `config` directory contains secrets and must not be included in shared release packages.

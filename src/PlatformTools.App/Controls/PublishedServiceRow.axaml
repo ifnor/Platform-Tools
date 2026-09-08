@@ -1,0 +1,38 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:m="using:PlatformTools.App.Models" x:Class="PlatformTools.App.Controls.PublishedServiceRow" x:DataType="m:PublishedService">
+  <Border Classes="surface" Padding="22" Margin="0,0,0,14">
+    <StackPanel Spacing="16">
+      <Grid ColumnDefinitions="Auto,*,Auto">
+        <Border Width="44" Height="44" CornerRadius="13" Background="{DynamicResource AccentSoftBrush}" Margin="0,0,14,0">
+          <Path Width="22" Height="22" Stretch="Uniform" Data="M3 3 H21 V17 H3 Z M8 21 H16 M12 17 V21 M7 7 H17 M7 11 H12" Stroke="#3087EF" StrokeThickness="1.7" StrokeLineCap="Round" StrokeJoin="Round"/>
+        </Border>
+        <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
+          <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="18" TextTrimming="CharacterEllipsis"/>
+          <TextBlock Text="{Binding ProtocolText}" Classes="eyebrow" LetterSpacing="1"/>
+        </StackPanel>
+        <Border Grid.Column="2" Background="{DynamicResource SoftBrush}" CornerRadius="16" Padding="11,6" VerticalAlignment="Center" Margin="12,0,0,0">
+          <StackPanel Orientation="Horizontal" Spacing="7"><Ellipse Width="6" Height="6" Fill="{Binding StatusColor}" VerticalAlignment="Center"/><TextBlock Text="{Binding StatusText}" FontSize="12" FontWeight="SemiBold"/></StackPanel>
+        </Border>
+      </Grid>
+      <Border Classes="inset">
+        <Grid ColumnDefinitions="*,32,*">
+          <StackPanel Spacing="6"><TextBlock Text="本地地址" Classes="eyebrow"/><TextBlock Text="{Binding LocalAddress}" FontSize="13" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding LocalAddress}"/></StackPanel>
+          <TextBlock Grid.Column="1" Text="→" Classes="muted" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+          <StackPanel Grid.Column="2" Spacing="6"><TextBlock Text="{Binding ModeText}" Classes="eyebrow" TextTrimming="CharacterEllipsis"/><TextBlock Text="{Binding AddressText}" FontSize="13" Foreground="#3087EF" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding PublicAddress}"/></StackPanel>
+        </Grid>
+      </Border>
+      <Border IsVisible="{Binding HasError}" Background="#12E88740" BorderBrush="#50E88740" BorderThickness="1" CornerRadius="10" Padding="12">
+        <TextBlock Text="{Binding Error}" Foreground="#D57A31" TextWrapping="Wrap" FontSize="12"/>
+      </Border>
+      <WrapPanel>
+        <Button Classes="primary" Content="启动" Tag="Start" Click="Action_Click" IsEnabled="{Binding CanStart}" Margin="0,0,8,4"/>
+        <Button Classes="secondary" Content="停止" Tag="Stop" Click="Action_Click" IsEnabled="{Binding CanStop}" Margin="0,0,8,4"/>
+        <Button Classes="secondary" Content="复制地址" Tag="Copy" Click="Action_Click" IsEnabled="{Binding CanShare}" Margin="0,0,8,4"/>
+        <Button Classes="quiet" Content="编辑" Tag="Edit" Click="Action_Click" IsEnabled="{Binding CanEdit}" Margin="0,0,4,4"/>
+        <Button Classes="quiet" Content="日志" Tag="Log" Click="Action_Click" Margin="0,0,4,4"/>
+        <Button Classes="quiet" Content="分享码" Tag="Share" Click="Action_Click" IsEnabled="{Binding CanShare}" Margin="0,0,4,4"/>
+        <Button Classes="quiet" Content="保存 .ptlink" Tag="Export" Click="Action_Click" IsEnabled="{Binding CanShare}" Margin="0,0,4,4"/>
+        <Button Classes="quiet danger" Content="删除" Tag="Delete" Click="Action_Click" IsEnabled="{Binding CanDelete}" Margin="0,0,0,4"/>
+      </WrapPanel>
+    </StackPanel>
+  </Border>
+</UserControl>

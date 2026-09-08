@@ -15,5 +15,6 @@ $asset = "cloudflared-windows-amd64.exe" # Cloudflare does not publish a native 
 Invoke-WebRequest -Uri "https://github.com/cloudflare/cloudflared/releases/latest/download/$asset" -OutFile (Join-Path $publish "tools\cloudflared.exe") -UseBasicParsing
 Copy-Item -LiteralPath (Join-Path $root "THIRD_PARTY_NOTICES.md") -Destination $publish
 if (Test-Path -LiteralPath $zip) { Remove-Item -LiteralPath $zip -Force }
-Compress-Archive -Path (Join-Path $publish "*") -DestinationPath $zip -CompressionLevel Optimal
+$packageFiles = Get-ChildItem -LiteralPath $publish | Where-Object { $_.Name -notin @('config', '.cloudflared') }
+Compress-Archive -LiteralPath $packageFiles.FullName -DestinationPath $zip -CompressionLevel Optimal
 Write-Output $zip

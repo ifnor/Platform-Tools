@@ -10,6 +10,15 @@ public static class LocalizationService
 {
     private static readonly Dictionary<string, string> ZhToEn = new(StringComparer.Ordinal)
     {
+        ["服务总数"]="Total services", ["运行中"]="Running", ["异常"]="Failed",
+        ["新增服务"]="Add service", ["多个服务可同时运行，配置会自动保留。"]="Run multiple services at once. Configurations are saved automatically.",
+        ["账号设置"]="Account settings", ["还没有发布服务"]="No services yet", ["添加本地网页、接口或远程连接，按需独立启动。"]="Add a local website, API, or remote connection and start each independently.",
+        ["本地地址"]="Local address", ["启动"]="Start", ["编辑"]="Edit", ["日志"]="Logs", ["删除"]="Delete",
+        ["服务配置"]="Service configuration", ["服务名称"]="Service name", ["例如 前端预览"]="For example: Frontend preview", ["数据库 / TCP"]="Database / TCP",
+        ["临时地址每次启动会重新生成；停止后失效。"]="A new temporary URL is generated on each start and expires when stopped.",
+        ["请先在设置中登录 Cloudflare。每个服务使用独立的隧道和公网域名。"]="Sign in to Cloudflare in Settings first. Each service has its own tunnel and hostname.",
+        ["Cloudflare Account ID（可留空）"]="Cloudflare Account ID (optional)", ["启动时输入 API Token，仅在当前操作内存中使用。"]="Enter an API token when starting. It is kept only in memory for that operation.",
+        ["取消"]="Cancel", ["保存"]="Save", ["保存并启动"]="Save and start",
         ["账号登录与状态请在设置中管理"]="Manage your account and sign-in status in Settings", ["前往设置"]="Open settings",
         ["登录 Cloudflare"]="Sign in to Cloudflare", ["重新授权"]="Reauthorize", ["刷新状态"]="Refresh status", ["取消授权"]="Cancel authorization", ["授权日志"]="Authorization log",
         ["首页"]="Home", ["发布服务"]="Publish", ["连接服务"]="Connect", ["设置"]="Settings",
