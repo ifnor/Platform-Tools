@@ -20,7 +20,7 @@ UninstallDisplayIcon={app}\PlatformTools.exe
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
 [Files]
-Source: "{#MySource}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "{#MySource}\*"; DestDir: "{app}"; Excludes: "config\*,.cloudflared\*"; Flags: ignoreversion recursesubdirs createallsubdirs
 [Icons]
 Name: "{autoprograms}\Platform Tools"; Filename: "{app}\PlatformTools.exe"
 Name: "{autodesktop}\Platform Tools"; Filename: "{app}\PlatformTools.exe"; Tasks: desktopicon

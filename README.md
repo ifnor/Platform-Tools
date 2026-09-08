@@ -90,3 +90,21 @@ The GitHub Actions release workflow tests and packages every supported runtime o
 - Creating Access protection requires the account-level Access API permission named above.
 
 See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for bundled component notices.
+
+## Automatic GitHub releases
+
+Push a version tag to build and publish all platforms:
+
+```bash
+git push origin main
+git tag -a v0.3.5 -m "Release v0.3.5"
+git push origin v0.3.5
+```
+
+The tag must contain the release workflow and scripts. Tags use `vMAJOR.MINOR.PATCH`, optionally followed by a prerelease suffix such as `-beta.1`. The workflow tests the tagged source, builds all six runtimes on native runners, verifies all 13 packages, generates `SHA256SUMS.txt`, then publishes a GitHub Release with generated notes. Prerelease tags are marked as prereleases. No personal access token is needed: only the publish job receives `contents: write` through `GITHUB_TOKEN`.
+
+Release assets: Windows x64 portable ZIP and Setup EXE; Windows ARM64 portable ZIP; Linux x64/ARM64 portable tar.gz, DEB and AppImage; macOS Intel/Apple Silicon portable tar.gz and DMG. Windows ARM64 uses the official x64 cloudflared binary under emulation.
+
+If a build fails, no release is published. Rerun failed jobs, or use Actions → Release → Run workflow with the **existing tag**. Partial uploads stay in a draft until publishing succeeds. A published release is never overwritten by a rerun; create a new version tag instead. Actions artifacts are retained for 14 days; published release assets remain available.
+
+Portable archives retain `./config` beside the executable. Installed Linux launchers use `${XDG_DATA_HOME:-$HOME/.local/share}/platform-tools/config`; the macOS app launcher uses `~/Library/Application Support/Platform Tools/config`. These launchers set `PLATFORMTOOLS_DATA_HOME` so read-only installation directories are not used for credentials. Signing and Apple notarization are not configured; these require the publisher's own certificates and credentials.

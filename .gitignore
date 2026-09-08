@@ -1,6 +1,7 @@
 # .NET and IDE files
 **/bin/
 **/obj/
+__pycache__/
 .vs/
 .idea/
 .vscode/

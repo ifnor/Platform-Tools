@@ -6,7 +6,9 @@ namespace PlatformTools.App.Services;
 
 internal sealed class AppPaths
 {
-    private static readonly Lazy<AppPaths> Default = new(() => new(AppContext.BaseDirectory,
+    private static readonly Lazy<AppPaths> Default = new(() => new(
+        string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("PLATFORMTOOLS_DATA_HOME"))
+            ? AppContext.BaseDirectory : Environment.GetEnvironmentVariable("PLATFORMTOOLS_DATA_HOME")!,
         Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)));
     public static AppPaths Current => Default.Value;

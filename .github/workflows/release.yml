@@ -1,50 +1,147 @@
 name: Release
 on:
+  push:
+    tags: ['v*']
   workflow_dispatch:
     inputs:
-      version: { description: Version, required: true, default: 0.1.0 }
-  push:
-    tags: ["v*"]
+      tag:
+        description: 'Existing version tag, e.g. v0.3.5'
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: release-${{ inputs.tag || github.ref_name }}
+  cancel-in-progress: false
 jobs:
+  version:
+    runs-on: ubuntu-24.04
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - id: version
+        env:
+          TAG: ${{ inputs.tag || github.ref_name }}
+        shell: bash
+        run: |
+          [[ "$TAG" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z]+([.-][0-9A-Za-z]+)*)?$ ]] || { echo 'Expected vMAJOR.MINOR.PATCH[-prerelease]'; exit 1; }
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
   test:
-    runs-on: ubuntu-latest
+    needs: version
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: refs/tags/${{ needs.version.outputs.tag }}
       - uses: actions/setup-dotnet@v4
-        with: { dotnet-version: 10.0.x }
+        with: { dotnet-version: '10.0.x' }
       - run: dotnet test PlatformTools.slnx -c Release
+      - run: python3 scripts/test-release.py
   package-windows:
-    needs: test
+    needs: [version, test]
     runs-on: windows-latest
-    strategy: { matrix: { rid: [win-x64, win-arm64] } }
+    strategy:
+      fail-fast: false
+      matrix:
+        rid: [win-x64, win-arm64]
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+      RID: ${{ matrix.rid }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: refs/tags/${{ needs.version.outputs.tag }}
       - uses: actions/setup-dotnet@v4
-        with: { dotnet-version: 10.0.x }
+        with: { dotnet-version: '10.0.x' }
       - shell: pwsh
-        run: ./scripts/package-windows.ps1 -Version '${{ inputs.version || github.ref_name }}'.TrimStart('v') -Runtime '${{ matrix.rid }}'
+        run: ./scripts/package-windows.ps1 -Version $env:VERSION -Runtime $env:RID
       - if: matrix.rid == 'win-x64'
         shell: pwsh
         run: |
-          choco install innosetup --no-progress -y
-          $v='${{ inputs.version || github.ref_name }}'.TrimStart('v'); $env:PLATFORMTOOLS_VERSION=$v; $env:PLATFORMTOOLS_SOURCE="$pwd\artifacts\PlatformTools-$v-win-x64"; $env:PLATFORMTOOLS_OUTPUT="$pwd\artifacts"; & 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe' installer\PlatformTools.iss
+          $compiler = 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe'
+          if (-not (Test-Path -LiteralPath $compiler)) {
+            choco install innosetup --no-progress -y
+            if ($LASTEXITCODE -ne 0) { throw 'Inno Setup installation failed' }
+          }
+          $env:PLATFORMTOOLS_VERSION = $env:VERSION
+          $env:PLATFORMTOOLS_SOURCE = "$pwd\artifacts\PlatformTools-$env:VERSION-win-x64"
+          $env:PLATFORMTOOLS_OUTPUT = "$pwd\artifacts"
+          & $compiler installer/PlatformTools.iss
+          if ($LASTEXITCODE -ne 0) { throw 'Installer compilation failed' }
       - uses: actions/upload-artifact@v4
-        with: { name: 'PlatformTools-${{ matrix.rid }}', path: artifacts/* }
+        with:
+          name: PlatformTools-${{ matrix.rid }}
+          if-no-files-found: error
+          retention-days: 14
+          path: |
+            artifacts/*-portable.zip
+            artifacts/*-Setup.exe
   package-unix:
-    needs: test
+    needs: [version, test]
     strategy:
+      fail-fast: false
       matrix:
         include:
-          - { os: ubuntu-latest, rid: linux-x64 }
+          - { os: ubuntu-24.04, rid: linux-x64 }
           - { os: ubuntu-24.04-arm, rid: linux-arm64 }
           - { os: macos-15-intel, rid: osx-x64 }
-          - { os: macos-latest, rid: osx-arm64 }
+          - { os: macos-15, rid: osx-arm64 }
     runs-on: ${{ matrix.os }}
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+      RID: ${{ matrix.rid }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: refs/tags/${{ needs.version.outputs.tag }}
       - uses: actions/setup-dotnet@v4
-        with: { dotnet-version: 10.0.x }
-      - run: chmod +x scripts/package-unix.sh && scripts/package-unix.sh "${VERSION#v}" '${{ matrix.rid }}'
-        env: { VERSION: '${{ inputs.version || github.ref_name }}' }
+        with: { dotnet-version: '10.0.x' }
+      - run: bash scripts/package-unix.sh "$VERSION" "$RID"
       - uses: actions/upload-artifact@v4
-        with: { name: 'PlatformTools-${{ matrix.rid }}', path: artifacts/* }
+        with:
+          name: PlatformTools-${{ matrix.rid }}
+          if-no-files-found: error
+          retention-days: 14
+          path: |
+            artifacts/*-portable.tar.gz
+            artifacts/*.deb
+            artifacts/*.AppImage
+            artifacts/*.dmg
+  publish:
+    needs: [version, package-windows, package-unix]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      TAG: ${{ needs.version.outputs.tag }}
+      VERSION: ${{ needs.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refs/tags/${{ needs.version.outputs.tag }}
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: PlatformTools-*
+          path: release-assets
+          merge-multiple: true
+      - name: Verify packages and write checksums
+        run: python3 scripts/verify-release.py "$VERSION" release-assets
+      - name: Publish complete release
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh release view "$TAG" --json isDraft > release-state.json 2>/dev/null; then
+            python3 -c 'import json; assert json.load(open("release-state.json"))["isDraft"], "Release is already published; use a new version tag"'
+          else
+            flags=()
+            if [[ "$VERSION" == *-* ]]; then flags+=(--prerelease); fi
+            gh release create "$TAG" --verify-tag --draft --title "Platform Tools $TAG" --generate-notes "${flags[@]}"
+          fi
+          gh release upload "$TAG" release-assets/* --clobber
+          flags=()
+          if [[ "$VERSION" == *-* ]]; then flags+=(--prerelease --latest=false); else flags+=(--prerelease=false); fi
+          gh release edit "$TAG" --draft=false "${flags[@]}"

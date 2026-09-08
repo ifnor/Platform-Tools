@@ -24,12 +24,12 @@ else
 fi
 chmod +x "$publish/PlatformTools" "$publish/tools/cloudflared"
 cp "$root/THIRD_PARTY_NOTICES.md" "$publish/"
-tar -C "$publish" -czf "$root/artifacts/PlatformTools-$version-$rid-portable.tar.gz" .
+tar --exclude='./config' --exclude='./.cloudflared' -C "$publish" -czf "$root/artifacts/PlatformTools-$version-$rid-portable.tar.gz" .
 if [[ "$rid" == linux-* ]]; then
   arch="$( [[ "$rid" == "linux-arm64" ]] && echo arm64 || echo amd64 )"
   deb="$root/artifacts/deb-$rid"
   rm -rf "$deb"; mkdir -p "$deb/DEBIAN" "$deb/opt/platform-tools" "$deb/usr/bin" "$deb/usr/share/applications" "$deb/usr/share/icons/hicolor/scalable/apps" "$deb/usr/share/mime/packages"
-  cp -a "$publish/." "$deb/opt/platform-tools/"
+  tar --exclude='./config' --exclude='./.cloudflared' -C "$publish" -cf - . | tar -C "$deb/opt/platform-tools" -xf -
   cat > "$deb/DEBIAN/control" <<EOF
 Package: platform-tools
 Version: $version
@@ -40,12 +40,18 @@ Maintainer: Platform Tools
 Depends: libx11-6, libice6, libsm6, libfontconfig1
 Description: Beginner-friendly Cloudflare Tunnel desktop client
 EOF
-  ln -s /opt/platform-tools/PlatformTools "$deb/usr/bin/platform-tools"
+  cat > "$deb/usr/bin/platform-tools" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+export PLATFORMTOOLS_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}/platform-tools"
+exec /opt/platform-tools/PlatformTools "$@"
+EOF
+  chmod +x "$deb/usr/bin/platform-tools"
   cp "$root/assets/platform-tools.svg" "$deb/usr/share/icons/hicolor/scalable/apps/platform-tools.svg"
   cat > "$deb/usr/share/applications/platform-tools.desktop" <<EOF
 [Desktop Entry]
 Name=Platform Tools
-Exec=/opt/platform-tools/PlatformTools
+Exec=platform-tools
 Icon=platform-tools
 Type=Application
 Categories=Network;Utility;
@@ -58,12 +64,14 @@ EOF
 
   appdir="$root/artifacts/PlatformTools-$version-$rid.AppDir"
   rm -rf "$appdir"; mkdir -p "$appdir/usr/bin"
-  cp -a "$publish/." "$appdir/usr/bin/"
+  tar --exclude='./config' --exclude='./.cloudflared' -C "$publish" -cf - . | tar -C "$appdir/usr/bin" -xf -
   cp "$root/assets/platform-tools.svg" "$appdir/platform-tools.svg"
   cp "$deb/usr/share/applications/platform-tools.desktop" "$appdir/platform-tools.desktop"
+  sed -i 's|Exec=platform-tools|Exec=PlatformTools|' "$appdir/platform-tools.desktop"
   cat > "$appdir/AppRun" <<'EOF'
 #!/usr/bin/env bash
 HERE="$(dirname "$(readlink -f "$0")")"
+export PLATFORMTOOLS_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}/platform-tools"
 exec "$HERE/usr/bin/PlatformTools" "$@"
 EOF
   chmod +x "$appdir/AppRun"
@@ -74,9 +82,17 @@ EOF
 elif [[ "$rid" == osx-* ]]; then
   bundle="$root/artifacts/Platform Tools.app"
   rm -rf "$bundle"; mkdir -p "$bundle/Contents/MacOS" "$bundle/Contents/Resources"
-  cp -a "$publish/." "$bundle/Contents/MacOS/"
+  tar --exclude='./config' --exclude='./.cloudflared' -C "$publish" -cf - . | tar -C "$bundle/Contents/MacOS" -xf -
+  cat > "$bundle/Contents/MacOS/PlatformToolsLauncher" <<'EOF'
+#!/bin/bash
+set -euo pipefail
+export PLATFORMTOOLS_DATA_HOME="$HOME/Library/Application Support/Platform Tools"
+exec "$(dirname "$0")/PlatformTools" "$@"
+EOF
+  chmod +x "$bundle/Contents/MacOS/PlatformToolsLauncher"
+  bundleVersion="${version%%-*}"
   cat > "$bundle/Contents/Info.plist" <<EOF
-<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd"><plist version="1.0"><dict><key>CFBundleName</key><string>Platform Tools</string><key>CFBundleDisplayName</key><string>Platform Tools</string><key>CFBundleIdentifier</key><string>tools.platform.desktop</string><key>CFBundleVersion</key><string>$version</string><key>CFBundleShortVersionString</key><string>$version</string><key>CFBundleExecutable</key><string>PlatformTools</string><key>NSHighResolutionCapable</key><true/><key>CFBundleDocumentTypes</key><array><dict><key>CFBundleTypeName</key><string>Platform Tools Share File</string><key>CFBundleTypeRole</key><string>Viewer</string><key>CFBundleTypeExtensions</key><array><string>ptlink</string></array></dict></array></dict></plist>
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd"><plist version="1.0"><dict><key>CFBundleName</key><string>Platform Tools</string><key>CFBundleDisplayName</key><string>Platform Tools</string><key>CFBundleIdentifier</key><string>tools.platform.desktop</string><key>CFBundleVersion</key><string>$bundleVersion</string><key>CFBundleShortVersionString</key><string>$bundleVersion</string><key>CFBundleExecutable</key><string>PlatformToolsLauncher</string><key>NSHighResolutionCapable</key><true/><key>CFBundleDocumentTypes</key><array><dict><key>CFBundleTypeName</key><string>Platform Tools Share File</string><key>CFBundleTypeRole</key><string>Viewer</string><key>CFBundleTypeExtensions</key><array><string>ptlink</string></array></dict></array></dict></plist>
 EOF
   hdiutil create -volname "Platform Tools" -srcfolder "$bundle" -ov -format UDZO "$root/artifacts/PlatformTools-$version-$rid.dmg"
 fi
