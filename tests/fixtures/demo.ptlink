@@ -1,0 +1,1 @@
+{"Version":1,"Name":"Demo SSH","Protocol":"ssh","Hostname":"ssh.example.com","SuggestedLocalPort":2222,"RequiresAccess":true}

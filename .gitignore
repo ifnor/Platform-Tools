@@ -1,0 +1,36 @@
+# .NET and IDE files
+**/bin/
+**/obj/
+.vs/
+.idea/
+.vscode/
+*.user
+*.suo
+*.userprefs
+
+# Build, release, test, and coverage output
+artifacts/
+publish/
+dist/
+TestResults/
+coverage/
+coverage*/
+
+# Downloaded Cloudflare binaries
+src/PlatformTools.App/tools/
+
+# Local runtime data and exported connection files
+*.log
+*.tmp
+*.ptlink
+!tests/fixtures/*.ptlink
+
+# Cloudflare credentials and local configuration
+.cloudflared/
+cert.pem
+*.pem
+
+# Operating system metadata
+.DS_Store
+Thumbs.db
+Desktop.ini

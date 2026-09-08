@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/PlatformTools.App/PlatformTools.App.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/PlatformTools.Tests/PlatformTools.Tests.csproj" />
+  </Folder>
+</Solution>

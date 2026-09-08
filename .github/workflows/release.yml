@@ -1,0 +1,50 @@
+name: Release
+on:
+  workflow_dispatch:
+    inputs:
+      version: { description: Version, required: true, default: 0.1.0 }
+  push:
+    tags: ["v*"]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with: { dotnet-version: 10.0.x }
+      - run: dotnet test PlatformTools.slnx -c Release
+  package-windows:
+    needs: test
+    runs-on: windows-latest
+    strategy: { matrix: { rid: [win-x64, win-arm64] } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with: { dotnet-version: 10.0.x }
+      - shell: pwsh
+        run: ./scripts/package-windows.ps1 -Version '${{ inputs.version || github.ref_name }}'.TrimStart('v') -Runtime '${{ matrix.rid }}'
+      - if: matrix.rid == 'win-x64'
+        shell: pwsh
+        run: |
+          choco install innosetup --no-progress -y
+          $v='${{ inputs.version || github.ref_name }}'.TrimStart('v'); $env:PLATFORMTOOLS_VERSION=$v; $env:PLATFORMTOOLS_SOURCE="$pwd\artifacts\PlatformTools-$v-win-x64"; $env:PLATFORMTOOLS_OUTPUT="$pwd\artifacts"; & 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe' installer\PlatformTools.iss
+      - uses: actions/upload-artifact@v4
+        with: { name: 'PlatformTools-${{ matrix.rid }}', path: artifacts/* }
+  package-unix:
+    needs: test
+    strategy:
+      matrix:
+        include:
+          - { os: ubuntu-latest, rid: linux-x64 }
+          - { os: ubuntu-24.04-arm, rid: linux-arm64 }
+          - { os: macos-15-intel, rid: osx-x64 }
+          - { os: macos-latest, rid: osx-arm64 }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with: { dotnet-version: 10.0.x }
+      - run: chmod +x scripts/package-unix.sh && scripts/package-unix.sh "${VERSION#v}" '${{ matrix.rid }}'
+        env: { VERSION: '${{ inputs.version || github.ref_name }}' }
+      - uses: actions/upload-artifact@v4
+        with: { name: 'PlatformTools-${{ matrix.rid }}', path: artifacts/* }
