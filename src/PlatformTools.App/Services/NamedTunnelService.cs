@@ -18,7 +18,31 @@ public sealed class NamedTunnelService : IAsyncDisposable
     public event EventHandler<string>? LogReceived;
     public bool IsRunning => _process is { HasExited: false };
 
-    public Task LoginAsync() => RunCommandAsync(["tunnel", "login"]);
+    public async Task LoginAsync()
+    {
+        var executable = Path.Combine(AppContext.BaseDirectory, "tools", OperatingSystem.IsWindows() ? "cloudflared.exe" : "cloudflared");
+        if (!File.Exists(executable)) throw new FileNotFoundException("未找到 cloudflared。", executable);
+
+        var info = new ProcessStartInfo
+        {
+            FileName = executable,
+            UseShellExecute = true,
+            RedirectStandardOutput = false,
+            RedirectStandardError = false,
+            CreateNoWindow = false
+        };
+        info.ArgumentList.Add("tunnel");
+        info.ArgumentList.Add("login");
+
+        using var process = new Process { StartInfo = info };
+        if (!process.Start()) throw new InvalidOperationException("无法启动 cloudflared login。");
+        
+        await process.WaitForExitAsync();
+
+        var certPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".cloudflared", "cert.pem");
+        if (!File.Exists(certPath))
+            throw new InvalidOperationException("授权完成但未找到 cert.pem，请重试。");
+    }
 
     public async Task<NamedTunnelResult> CreateAndStartAsync(string name, string hostname, string serviceUrl)
     {
