@@ -31,6 +31,7 @@ public sealed class CloudflaredService : IAsyncDisposable
             RedirectStandardError = true,
             CreateNoWindow = true
         };
+        AppPaths.Current.ConfigureCloudflared(startInfo);
         startInfo.ArgumentList.Add("tunnel");
         startInfo.ArgumentList.Add("--no-autoupdate");
         startInfo.ArgumentList.Add("--url");

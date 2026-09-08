@@ -1,12 +1,27 @@
 <UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="PlatformTools.App.Views.SettingsView">
-  <ScrollViewer><StackPanel Margin="40,28,40,36" Spacing="12" MaxWidth="900"><TextBlock Text="设置" FontSize="30" FontWeight="Bold"/><TextBlock Text="语言、主题、cloudflared 更新和安全存储选项。" Foreground="#697386"/>
-    <Border Margin="0,20,0,0" Padding="24" CornerRadius="16" Background="White" BorderBrush="#E2E8F0" BorderThickness="1"><StackPanel Spacing="18">
-      <Grid ColumnDefinitions="*,220"><StackPanel><TextBlock Text="界面语言" FontWeight="SemiBold"/><TextBlock Text="默认跟随系统语言" Foreground="#697386" FontSize="12"/></StackPanel><ComboBox x:Name="LanguageBox" Grid.Column="1" SelectedIndex="0" SelectionChanged="Language_Changed"><ComboBoxItem Content="跟随系统"/><ComboBoxItem Content="简体中文"/><ComboBoxItem Content="English"/></ComboBox></Grid>
+  <ScrollViewer><StackPanel Margin="40,28,40,36" Spacing="12" MaxWidth="900"><TextBlock Text="设置" FontSize="30" FontWeight="Bold"/><TextBlock Text="语言、主题、cloudflared 更新和安全存储选项。" Foreground="{DynamicResource MutedBrush}"/>
+    <Border Classes="surface" Padding="24" Margin="0,16,0,0">
+      <StackPanel Spacing="14">
+        <TextBlock Text="Cloudflare 账户" FontSize="18" FontWeight="SemiBold"/>
+        <StackPanel Orientation="Horizontal" Spacing="9"><Ellipse x:Name="AccountDot" Width="8" Height="8" VerticalAlignment="Center"/><TextBlock x:Name="AccountStatusText" FontSize="15" FontWeight="SemiBold" TextWrapping="Wrap"/></StackPanel>
+        <TextBlock x:Name="AccountDescription" Classes="muted" TextWrapping="Wrap" FontSize="13"/>
+        <TextBlock x:Name="AccountIdText" Classes="muted" FontSize="12" TextWrapping="Wrap"/>
+        <WrapPanel Orientation="Horizontal">
+          <Button x:Name="LoginButton" Content="登录 Cloudflare" Click="Login_Click" Background="#1677FF" Foreground="White" Padding="18,9" Margin="0,0,10,0"/>
+          <Button x:Name="RefreshAccountButton" Content="刷新状态" Click="RefreshAccount_Click" Padding="18,9" Margin="0,0,10,0"/>
+          <Button x:Name="CancelLoginButton" Content="取消授权" Click="CancelLogin_Click" IsVisible="False" Padding="18,9"/>
+        </WrapPanel>
+        <TextBlock x:Name="AccountErrorText" Foreground="#E88740" TextWrapping="Wrap" IsVisible="False"/>
+        <Expander x:Name="LoginLogPanel" Header="授权日志" IsVisible="False" HorizontalAlignment="Stretch"><TextBox x:Name="LoginLogBox" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" Height="130" FontSize="12"/></Expander>
+      </StackPanel>
+    </Border>
+    <Border Margin="0,8,0,0" Padding="24" CornerRadius="16" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="1"><StackPanel Spacing="18">
+      <Grid ColumnDefinitions="*,220"><StackPanel><TextBlock Text="界面语言" FontWeight="SemiBold"/><TextBlock Text="默认跟随系统语言" Foreground="{DynamicResource MutedBrush}" FontSize="12"/></StackPanel><ComboBox x:Name="LanguageBox" Grid.Column="1" SelectedIndex="0" SelectionChanged="Language_Changed"><ComboBoxItem Content="跟随系统"/><ComboBoxItem Content="简体中文"/><ComboBoxItem Content="English"/></ComboBox></Grid>
       <Separator/>
-      <Grid ColumnDefinitions="*,Auto"><StackPanel><TextBlock Text="自动检查 cloudflared 更新" FontWeight="SemiBold"/><TextBlock Text="只从 Cloudflare 官方渠道获取" Foreground="#697386" FontSize="12"/></StackPanel><ToggleSwitch x:Name="AutoUpdateSwitch" Grid.Column="1" IsChecked="True" Click="AutoUpdate_Click"/></Grid>
-      <Grid ColumnDefinitions="*,Auto"><StackPanel Spacing="4"><TextBlock Text="cloudflared 版本" FontWeight="SemiBold"/><TextBlock x:Name="VersionText" Text="正在读取…" Foreground="#697386" FontSize="12" TextWrapping="Wrap"/></StackPanel><Button x:Name="UpdateButton" Grid.Column="1" Content="检查更新" Click="Update_Click"/></Grid>
+      <Grid ColumnDefinitions="*,Auto"><StackPanel><TextBlock Text="自动检查 cloudflared 更新" FontWeight="SemiBold"/><TextBlock Text="只从 Cloudflare 官方渠道获取" Foreground="{DynamicResource MutedBrush}" FontSize="12"/></StackPanel><ToggleSwitch x:Name="AutoUpdateSwitch" Grid.Column="1" IsChecked="True" Click="AutoUpdate_Click"/></Grid>
+      <Grid ColumnDefinitions="*,Auto"><StackPanel Spacing="4"><TextBlock Text="cloudflared 版本" FontWeight="SemiBold"/><TextBlock x:Name="VersionText" Text="正在读取…" Foreground="{DynamicResource MutedBrush}" FontSize="12" TextWrapping="Wrap"/></StackPanel><Button x:Name="UpdateButton" Grid.Column="1" Content="检查更新" Click="Update_Click"/></Grid>
       <Separator/>
-      <StackPanel Spacing="5"><TextBlock Text="凭据安全" FontWeight="SemiBold"/><TextBlock Text="API Token 仅在当前操作的内存中使用，操作后立即清空；不会写入配置或分享文件。cloudflared 账户凭据保存在当前系统用户目录。" Foreground="#697386" FontSize="12" TextWrapping="Wrap"/></StackPanel>
+      <StackPanel Spacing="5"><TextBlock Text="凭据安全" FontWeight="SemiBold"/><TextBlock Text="API Token 仅在当前操作的内存中使用，操作后立即清空；不会写入配置或分享文件。账户凭据、应用设置和连接记录保存在程序目录下的 config 文件夹。" Foreground="{DynamicResource MutedBrush}" FontSize="12" TextWrapping="Wrap"/></StackPanel>
     </StackPanel></Border>
   </StackPanel></ScrollViewer>
 </UserControl>

@@ -1,15 +1,38 @@
-<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:models="using:PlatformTools.App.Models" x:Class="PlatformTools.App.Views.HomeView">
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:models="using:PlatformTools.App.Models" xmlns:c="using:PlatformTools.App.Controls" x:Class="PlatformTools.App.Views.HomeView">
   <ScrollViewer HorizontalScrollBarVisibility="Disabled">
-    <StackPanel Margin="34,24,34,34" Spacing="22" MaxWidth="1100">
-      <Grid ColumnDefinitions="*,260" MinHeight="150">
-        <StackPanel VerticalAlignment="Center" Spacing="10"><TextBlock Text="让本地服务安全上线" FontSize="36" FontWeight="Bold" Foreground="#101828"/><TextBlock Text="无需命令行，几步即可发布或连接服务" FontSize="17" Foreground="#697386" TextWrapping="Wrap"/></StackPanel>
-        <Border Grid.Column="1" CornerRadius="75" Width="150" Height="150" Background="#FFF4E8" HorizontalAlignment="Center"><PathIcon Width="82" Height="82" Foreground="#FFA446" Data="M6,19A5,5 0 0,1 5,9A7,7 0 0,1 18,7A5,5 0 0,1 18,19Z"/></Border>
+    <StackPanel Margin="36,12,36,32" Spacing="22" MaxWidth="1160">
+      <Grid ColumnDefinitions="3*,2*" MinHeight="190">
+        <StackPanel VerticalAlignment="Center" Spacing="12">
+          <TextBlock Text="LOCAL TO WORLD" FontSize="11" FontWeight="SemiBold" LetterSpacing="2.5" Foreground="#3087EF"/>
+          <TextBlock Text="让本地服务安全上线" FontSize="32" FontWeight="Bold" LetterSpacing="-0.7" TextWrapping="Wrap"/>
+          <TextBlock Text="无需命令行，几步即可发布或连接服务" FontSize="14" Classes="muted" TextWrapping="Wrap"/>
+        </StackPanel>
+        <c:ConnectionIllustration Grid.Column="1" MaxWidth="350" Margin="4,0,0,0"/>
       </Grid>
-      <Grid ColumnDefinitions="*,18,*" Height="160">
-        <Button Background="#1677FF" BorderThickness="0" CornerRadius="16" Click="Publish_Click" Padding="26"><Grid ColumnDefinitions="58,*,28"><Border Width="52" Height="52" CornerRadius="14" Background="#3B8CFF"><PathIcon Width="27" Foreground="White" Data="M4,18L20,12L4,6L4,11L15,12L4,13Z"/></Border><StackPanel Grid.Column="1" Margin="14,0" VerticalAlignment="Center" Spacing="7"><TextBlock Text="发布本地服务" Foreground="White" FontSize="21" FontWeight="SemiBold"/><TextBlock Text="将这台电脑上的服务分享出去" Foreground="#DCEBFF" FontSize="13" TextWrapping="Wrap"/></StackPanel><PathIcon Grid.Column="2" Width="22" Foreground="White" Data="M5,12H19M13,6L19,12L13,18"/></Grid></Button>
-        <Button Grid.Column="2" Background="White" BorderBrush="#DCE5F2" BorderThickness="1" CornerRadius="16" Click="Connect_Click" Padding="26"><Grid ColumnDefinitions="58,*,28"><Border Width="52" Height="52" CornerRadius="14" Background="#EAF2FF"><PathIcon Width="27" Foreground="#1677FF" Data="M10,13A5,5 0 0,0 17,13L20,10A5,5 0 0,0 13,3L11,5M14,11A5,5 0 0,0 7,11L4,14A5,5 0 0,0 11,21L13,19"/></Border><StackPanel Grid.Column="1" Margin="14,0" VerticalAlignment="Center" Spacing="7"><TextBlock Text="连接分享服务" Foreground="#14213D" FontSize="21" FontWeight="SemiBold"/><TextBlock Text="使用分享码或 .ptlink 文件连接" Foreground="#697386" FontSize="13" TextWrapping="Wrap"/></StackPanel><PathIcon Grid.Column="2" Width="22" Data="M5,12H19M13,6L19,12L13,18"/></Grid></Button>
+      <Grid ColumnDefinitions="*,20,*">
+        <c:ActionCard Heading="发布本地服务" Description="将这台电脑上的服务分享出去" IconData="M3 10 L22 2 L14 22 L10 14 Z M10 14 L16 8" Click="Publish_Click" Foreground="White" BorderThickness="0">
+          <c:ActionCard.Background><LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%"><GradientStop Color="#319FFF"/><GradientStop Offset="1" Color="#1768EC"/></LinearGradientBrush></c:ActionCard.Background>
+        </c:ActionCard>
+        <c:ActionCard Grid.Column="2" Heading="连接分享服务" Description="使用分享码或 .ptlink 文件连接" IconData="M9 6 L11 8 L7 12 A3 3 0 0 0 11 16 L15 12 L17 14 L13 18 A6 6 0 0 1 5 10 Z M15 18 L13 16 L17 12 A3 3 0 0 0 13 8 L9 12 L7 10 L11 6 A6 6 0 0 1 19 14 Z" Click="Connect_Click"/>
       </Grid>
-      <Border Background="White" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="16" MinHeight="210" Padding="26"><Grid RowDefinitions="36,*"><TextBlock Text="最近使用" FontSize="18" FontWeight="SemiBold" Foreground="#14213D"/><StackPanel x:Name="EmptyState" Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="10"><Border Width="48" Height="48" CornerRadius="14" Background="#F2F5F9"><PathIcon Width="23" Foreground="#A8B2C3" Data="M6,5H18M6,12H18M6,19H18"/></Border><TextBlock Text="暂无最近使用的服务" Foreground="#909BAD" FontSize="14"/></StackPanel><ItemsControl x:Name="RecentItems" Grid.Row="1" IsVisible="False"><ItemsControl.ItemTemplate><DataTemplate x:DataType="models:RecentService"><Border Padding="12,10" Margin="0,3" CornerRadius="9" Background="#F8FAFD"><Grid ColumnDefinitions="90,*,Auto"><TextBlock Text="{Binding Protocol}" FontWeight="SemiBold" Foreground="#1677FF"/><StackPanel Grid.Column="1"><TextBlock Text="{Binding Name}" FontWeight="SemiBold"/><TextBlock Text="{Binding Address}" Foreground="#697386" FontSize="12"/></StackPanel><TextBlock Grid.Column="2" Text="{Binding LastUsedUtc}" Foreground="#909BAD" FontSize="11"/></Grid></Border></DataTemplate></ItemsControl.ItemTemplate></ItemsControl></Grid></Border>
+      <Border Classes="surface" Padding="24" MinHeight="216">
+        <Grid RowDefinitions="36,*">
+          <TextBlock Text="最近使用" FontSize="17" FontWeight="SemiBold"/>
+          <Border Grid.Row="1" Background="{DynamicResource SoftBrush}" CornerRadius="12" Margin="0,8,0,0" x:Name="EmptyState">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12" Margin="16,20">
+              <Path Data="M10 2 H30 A5 5 0 0 1 35 7 V33 A5 5 0 0 1 30 38 H10 A5 5 0 0 1 5 33 V7 A5 5 0 0 1 10 2 M13 13 H27 M13 20 H27 M13 27 H22" Width="40" Height="40" Stroke="{DynamicResource MutedBrush}" StrokeThickness="1.7" StrokeLineCap="Round" Opacity="0.55"/>
+              <TextBlock Text="暂无最近使用的服务" Classes="muted" FontSize="13"/>
+            </StackPanel>
+          </Border>
+          <ItemsControl x:Name="RecentItems" Grid.Row="1" IsVisible="False">
+            <ItemsControl.ItemTemplate><DataTemplate x:DataType="models:RecentService">
+              <Border Padding="14,12" Margin="0,4" CornerRadius="12" Background="{DynamicResource SoftBrush}">
+                <Grid ColumnDefinitions="74,*,Auto"><Border CornerRadius="6" Background="{DynamicResource AccentSoftBrush}" Padding="8,5" VerticalAlignment="Center" HorizontalAlignment="Left"><TextBlock Text="{Binding Protocol}" FontSize="11" FontWeight="SemiBold" Foreground="#3087EF"/></Border><StackPanel Grid.Column="1" Spacing="4"><TextBlock Text="{Binding Name}" FontWeight="SemiBold"/><TextBlock Text="{Binding Address}" Classes="muted" FontSize="12" TextTrimming="CharacterEllipsis"/></StackPanel><TextBlock Grid.Column="2" Text="{Binding LastUsedUtc, StringFormat='{}{0:MM-dd HH:mm}'}" Classes="muted" FontSize="11" VerticalAlignment="Center" Margin="12,0,0,0"/></Grid>
+              </Border>
+            </DataTemplate></ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </Grid>
+      </Border>
     </StackPanel>
   </ScrollViewer>
 </UserControl>

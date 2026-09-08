@@ -4,6 +4,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>../../assets/platform-tools.ico</ApplicationIcon>
     <AssemblyName>PlatformTools</AssemblyName>
     <RootNamespace>PlatformTools.App</RootNamespace>
     <Version>0.1.0</Version>
@@ -15,6 +16,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <AvaloniaResource Include="../../assets/platform-tools.ico" Link="Assets/platform-tools.ico" />
+    <InternalsVisibleTo Include="PlatformTools.Tests" />
     <PackageReference Include="Avalonia" Version="12.1.2" />
     <PackageReference Include="Avalonia.Desktop" Version="12.1.2" />
     <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.2" />

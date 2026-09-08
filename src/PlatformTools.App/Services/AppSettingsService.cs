@@ -15,8 +15,8 @@ public sealed class AppSettingsService
 
     private AppSettingsService()
     {
-        var directory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "PlatformTools");
-        Directory.CreateDirectory(directory); _path = Path.Combine(directory, "settings.json"); Settings = Load();
+        _path = AppPaths.Current.SettingsPath;
+        Settings = Load();
     }
 
     public void Save()

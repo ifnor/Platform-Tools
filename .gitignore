@@ -20,6 +20,7 @@ coverage*/
 src/PlatformTools.App/tools/
 
 # Local runtime data and exported connection files
+**/config/
 *.log
 *.tmp
 *.ptlink

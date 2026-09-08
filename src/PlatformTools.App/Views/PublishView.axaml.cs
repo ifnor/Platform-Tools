@@ -87,11 +87,8 @@ public partial class PublishView : UserControl
         if (_publicUrl is not null) Process.Start(new ProcessStartInfo(_publicUrl) { UseShellExecute = true });
     }
 
-    private async void Login_Click(object? sender, RoutedEventArgs e)
-    {
-        try { AppendLog("浏览器将打开 Cloudflare 授权页面，请完成授权后返回。"); await _namedTunnel.LoginAsync(); AppendLog("Cloudflare 授权完成。"); }
-        catch (Exception ex) { AppendLog("登录失败：" + ex.Message); }
-    }
+    public event EventHandler? SettingsRequested;
+    private void AccountSettings_Click(object? sender, RoutedEventArgs e) => SettingsRequested?.Invoke(this, EventArgs.Empty);
 
     private void Mode_Changed(object? sender, RoutedEventArgs e)
     {

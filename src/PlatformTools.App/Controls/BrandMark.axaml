@@ -1,0 +1,6 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="PlatformTools.App.Controls.BrandMark">
+  <Viewbox><Canvas Width="64" Height="64">
+    <Border Width="64" Height="64" CornerRadius="18"><Border.Background><LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%"><GradientStop Color="#45C4F4"/><GradientStop Offset="0.5" Color="#258BFA"/><GradientStop Offset="1" Color="#165BE6"/></LinearGradientBrush></Border.Background></Border>
+    <Path Data="M18 44 C11 44 8 39 8 34 C8 29 12 25 17 25 C19 17 25 13 32 13 C40 13 46 18 48 25 C54 26 57 30 57 35 C57 41 52 45 46 45 L18 45Z" Fill="White" Margin="0,3,0,0"/>
+  </Canvas></Viewbox>
+</UserControl>

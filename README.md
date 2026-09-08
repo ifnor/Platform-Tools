@@ -17,7 +17,7 @@ Platform Tools is a beginner-friendly, cross-platform desktop interface for Clou
 1. Open **Platform Tools** and select **Publish a local service**.
 2. Choose the service type and confirm the local address.
 3. For a web service, choose **Temporary URL** and press **Publish**. Copy the generated address when it appears.
-4. For an own-domain or non-HTTP service, choose **Use my own domain**, sign in in the browser, enter a tunnel name and full hostname, then publish.
+4. For an own-domain or non-HTTP service, open **Settings → Cloudflare account** and sign in in the browser. Check the displayed account status, then choose **Use my own domain**, enter a tunnel name and full hostname, and publish. The status in the top bar also opens Settings. Use **Refresh status** to verify saved credentials; a network verification failure does not remove them.
 5. Save the generated `.ptlink` file when another computer needs the Platform Tools connector.
 
 Non-HTTP services are not ordinary publicly exposed ports. Cloudflare requires `cloudflared` on the connecting computer. Platform Tools includes and controls it automatically. RDP opens Microsoft Remote Desktop on Windows; SSH and database modes display the local command/address to use.
@@ -26,7 +26,13 @@ Non-HTTP services are not ordinary publicly exposed ports. Cloudflare requires `
 
 Protected mode asks for a Cloudflare Account ID, an API token with **Access: Apps and Policies Write**, and one or more allowed email addresses. The token exists only in the input control and operation memory and is cleared after use. It is not persisted, logged, or exported.
 
-Cloudflare's browser login creates `cert.pem` and tunnel credential files in the current user's standard `.cloudflared` directory. Platform Tools stores non-secret settings and recent history in the current user's local application-data directory.
+All persistent app data is stored in `config` beside the executable, independent of the working directory:
+
+- `config/.cloudflared/`: Cloudflare login certificate (`cert.pem`), tunnel credentials (`<tunnel-id>.json`), and client Access authorization cache.
+- `config/settings.json`: settings and recent connections.
+- `config/tunnels/<tunnel-id>/config.yml`: generated tunnel configuration (regenerated when publishing after moving the application).
+
+On first use, missing settings and credentials are copied from the previous user-profile locations. Existing portable files take precedence, and the original files are retained. Keep the entire `config` directory when upgrading or moving the app; use a writable application directory. API tokens are still kept only in memory. The `config` directory contains secrets and must not be included in shared release packages.
 
 ## Supported packages
 

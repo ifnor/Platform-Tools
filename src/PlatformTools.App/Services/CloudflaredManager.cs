@@ -19,6 +19,7 @@ public sealed class CloudflaredManager(HttpClient? client = null)
     {
         if (!File.Exists(ExecutablePath)) return "未安装";
         var info = new ProcessStartInfo { FileName = ExecutablePath, UseShellExecute = false, RedirectStandardOutput = true, CreateNoWindow = true };
+        AppPaths.Current.ConfigureCloudflared(info);
         info.ArgumentList.Add("--version");
         using var process = Process.Start(info) ?? throw new InvalidOperationException("无法读取 cloudflared 版本。");
         var output = await process.StandardOutput.ReadToEndAsync(); await process.WaitForExitAsync();

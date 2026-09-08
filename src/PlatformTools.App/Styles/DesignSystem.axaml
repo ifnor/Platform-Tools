@@ -1,0 +1,32 @@
+<Styles xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:c="using:PlatformTools.App.Controls">
+  <Styles.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.ThemeDictionaries>
+        <ResourceDictionary x:Key="Light">
+          <SolidColorBrush x:Key="PageBrush" Color="#F6F9FE"/><SolidColorBrush x:Key="SurfaceBrush" Color="#FFFFFF"/><SolidColorBrush x:Key="SoftBrush" Color="#F2F6FC"/><SolidColorBrush x:Key="LineBrush" Color="#E3EBF5"/><SolidColorBrush x:Key="InkBrush" Color="#14243D"/><SolidColorBrush x:Key="MutedBrush" Color="#73839A"/><SolidColorBrush x:Key="AccentSoftBrush" Color="#E9F2FF"/>
+        </ResourceDictionary>
+        <ResourceDictionary x:Key="Dark">
+          <SolidColorBrush x:Key="PageBrush" Color="#101827"/><SolidColorBrush x:Key="SurfaceBrush" Color="#192437"/><SolidColorBrush x:Key="SoftBrush" Color="#202E43"/><SolidColorBrush x:Key="LineBrush" Color="#2D3C52"/><SolidColorBrush x:Key="InkBrush" Color="#ECF3FF"/><SolidColorBrush x:Key="MutedBrush" Color="#A4B5CC"/><SolidColorBrush x:Key="AccentSoftBrush" Color="#223E62"/>
+        </ResourceDictionary>
+      </ResourceDictionary.ThemeDictionaries>
+      <ControlTheme x:Key="{x:Type c:ActionCard}" TargetType="c:ActionCard">
+        <Setter Property="Background" Value="{DynamicResource SurfaceBrush}"/><Setter Property="Foreground" Value="{DynamicResource InkBrush}"/><Setter Property="BorderBrush" Value="{DynamicResource LineBrush}"/><Setter Property="BorderThickness" Value="1"/><Setter Property="CornerRadius" Value="20"/><Setter Property="Padding" Value="24"/><Setter Property="HorizontalContentAlignment" Value="Stretch"/><Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template"><ControlTemplate><Border x:Name="Card" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{TemplateBinding CornerRadius}" Padding="{TemplateBinding Padding}">
+          <Grid RowDefinitions="48,Auto,Auto" ColumnDefinitions="*,28">
+            <Border Width="46" Height="46" HorizontalAlignment="Left" CornerRadius="14" Background="#20298EFF"><PathIcon Data="{TemplateBinding IconData}" Width="24" Height="24" Foreground="{TemplateBinding Foreground}"/></Border>
+            <Path Grid.Column="1" Data="M2 10 H19 M12 3 L19 10 L12 17" Width="20" Height="20" Stroke="{TemplateBinding Foreground}" StrokeThickness="1.8" StrokeLineCap="Round" StrokeJoin="Round" VerticalAlignment="Center"/>
+            <TextBlock Grid.Row="1" Grid.ColumnSpan="2" Text="{TemplateBinding Heading}" FontSize="22" FontWeight="SemiBold" Foreground="{TemplateBinding Foreground}" Margin="0,18,0,7" TextWrapping="Wrap"/>
+            <TextBlock Grid.Row="2" Grid.ColumnSpan="2" Text="{TemplateBinding Description}" FontSize="13" Foreground="{TemplateBinding Foreground}" Opacity="0.72" TextWrapping="Wrap"/>
+          </Grid>
+        </Border></ControlTemplate></Setter>
+        <Style Selector="^:pointerover /template/ Border#Card"><Setter Property="Opacity" Value="0.9"/><Setter Property="BorderBrush" Value="#69A7FF"/></Style>
+        <Style Selector="^:pressed /template/ Border#Card"><Setter Property="Opacity" Value="0.76"/></Style>
+        <Style Selector="^:focus-visible /template/ Border#Card"><Setter Property="BorderBrush" Value="#FFAF55"/><Setter Property="BorderThickness" Value="2"/></Style>
+      </ControlTheme>
+    </ResourceDictionary>
+  </Styles.Resources>
+  <Style Selector="TextBlock"><Setter Property="Foreground" Value="{DynamicResource InkBrush}"/></Style>
+  <Style Selector="TextBlock.muted"><Setter Property="Foreground" Value="{DynamicResource MutedBrush}"/></Style>
+  <Style Selector="Border.surface"><Setter Property="Background" Value="{DynamicResource SurfaceBrush}"/><Setter Property="BorderBrush" Value="{DynamicResource LineBrush}"/><Setter Property="BorderThickness" Value="1"/><Setter Property="CornerRadius" Value="20"/></Style>
+  <Style Selector="Button"><Setter Property="CornerRadius" Value="10"/></Style>
+</Styles>

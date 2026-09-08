@@ -17,26 +17,34 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        _ = new Controls.AdaptiveWindowLayout(this, AdaptiveContent);
         PageHost.Content = _home;
         _home.PublishRequested += (_, _) => Navigate(_publish, PublishButton);
         _home.ConnectRequested += (_, _) => Navigate(_connect, ConnectButton);
-        _settings.LanguageChanged += (_, english) => LocalizationService.SetLanguage(english, this, _home, _publish, _connect, _settings);
+        _publish.SettingsRequested += (_, _) => Navigate(_settings, SettingsButton);
+        _settings.LanguageChanged += (_, english) => { LocalizationService.SetLanguage(english, this, _home, _publish, _connect, _settings); RenderAccountState(); };
         var saved = AppSettingsService.Current.Settings;
         var useEnglish = saved.Language == "en" || (saved.Language == "system" && !System.Globalization.CultureInfo.CurrentUICulture.Name.StartsWith("zh", System.StringComparison.OrdinalIgnoreCase));
         LocalizationService.SetLanguage(useEnglish, this, _home, _publish, _connect, _settings);
         if (Application.Current is { } app && saved.Theme != "system") app.RequestedThemeVariant = saved.Theme == "dark" ? ThemeVariant.Dark : ThemeVariant.Light;
-        Closed += async (_, _) => { await _publish.StopAllAsync(); await _connect.StopAllAsync(); };
-        Opened += async (_, _) =>
+        CloudflareAccountService.Current.Changed += AccountChanged;
+        RenderAccountState();
+        Closed += async (_, _) =>
         {
-            try
-            {
-                var version = await new CloudflaredManager().GetInstalledVersionAsync();
-                CloudflareStatusText.Text = version == "未安装" ? LocalizationService.T("cloudflared 未安装", "cloudflared missing") : LocalizationService.T("Cloudflare 就绪", "Cloudflare ready");
-            }
-            catch { CloudflareStatusText.Text = LocalizationService.T("cloudflared 不可用", "cloudflared unavailable"); }
+            CloudflareAccountService.Current.Changed -= AccountChanged;
+            CloudflareAccountService.Current.Cancel();
+            await _publish.StopAllAsync(); await _connect.StopAllAsync();
         };
+        Opened += async (_, _) => await CloudflareAccountService.Current.RefreshAsync();
     }
 
+    private void AccountChanged(object? sender, System.EventArgs e) => Avalonia.Threading.Dispatcher.UIThread.Post(RenderAccountState);
+    private void RenderAccountState()
+    {
+        var account = CloudflareAccountService.Current;
+        CloudflareStatusText.Text = "Cloudflare · " + account.StatusText;
+        AccountStatusDot.Fill = new Avalonia.Media.SolidColorBrush(Avalonia.Media.Color.Parse(account.StatusColor));
+    }
     private void Home_Click(object? sender, RoutedEventArgs e) => Navigate(_home, HomeButton);
     private void Publish_Click(object? sender, RoutedEventArgs e) => Navigate(_publish, PublishButton);
     private void Connect_Click(object? sender, RoutedEventArgs e) => Navigate(_connect, ConnectButton);

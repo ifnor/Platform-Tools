@@ -26,6 +26,7 @@ public sealed class ClientConnectionService : IAsyncDisposable
         var executable = Path.Combine(AppContext.BaseDirectory, "tools", OperatingSystem.IsWindows() ? "cloudflared.exe" : "cloudflared");
         if (!File.Exists(executable)) throw new FileNotFoundException("未找到 cloudflared。", executable);
         var info = new ProcessStartInfo { FileName = executable, UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true, CreateNoWindow = true };
+        AppPaths.Current.ConfigureCloudflared(info);
         info.ArgumentList.Add("access");
         info.ArgumentList.Add(profile.Protocol == "rdp" ? "rdp" : "tcp");
         info.ArgumentList.Add("--hostname"); info.ArgumentList.Add(profile.Hostname);

@@ -10,6 +10,8 @@ public static class LocalizationService
 {
     private static readonly Dictionary<string, string> ZhToEn = new(StringComparer.Ordinal)
     {
+        ["账号登录与状态请在设置中管理"]="Manage your account and sign-in status in Settings", ["前往设置"]="Open settings",
+        ["登录 Cloudflare"]="Sign in to Cloudflare", ["重新授权"]="Reauthorize", ["刷新状态"]="Refresh status", ["取消授权"]="Cancel authorization", ["授权日志"]="Authorization log",
         ["首页"]="Home", ["发布服务"]="Publish", ["连接服务"]="Connect", ["设置"]="Settings",
         ["简单 · 安全 · 连接世界"]="Simple · Secure · Connected", ["Cloudflare 就绪"]="Cloudflare ready",
         ["让本地服务安全上线"]="Bring local services online safely", ["无需命令行，几步即可发布或连接服务"]="Publish or connect in a few steps — no command line required",
@@ -28,7 +30,7 @@ public static class LocalizationService
         ["粘贴分享码或导入 .ptlink 文件，无需手动输入 cloudflared 命令。"]="Paste a share code or import a .ptlink file — no cloudflared commands needed.", ["分享码"]="Share code", ["解析分享码"]="Parse share code", ["导入 .ptlink 文件"]="Import .ptlink file", ["本地连接端口"]="Local connection port", ["本机应用将连接这个端口"]="Your local app connects to this port", ["开始连接"]="Connect", ["断开"]="Disconnect",
         ["语言、主题、cloudflared 更新和安全存储选项。"]="Language, theme, cloudflared updates, and secure storage.", ["界面语言"]="Language", ["默认跟随系统语言"]="Follows the system by default", ["跟随系统"]="System default", ["简体中文"]="Simplified Chinese", ["自动检查 cloudflared 更新"]="Automatically check for cloudflared updates", ["只从 Cloudflare 官方渠道获取"]="Only download from official Cloudflare sources",
         ["例如 8080 或 http://localhost:8080"]="For example: 8080 or http://localhost:8080", ["例如 platform-tools"]="For example: platform-tools", ["例如 demo.example.com"]="For example: demo.example.com", ["API Token（仅在内存中使用，不会保存）"]="API Token (memory only; never saved)", ["允许的邮箱，多个邮箱用逗号分隔"]="Allowed emails, separated by commas", ["在这里粘贴分享码"]="Paste a share code here", ["复制连接命令"]="Copy connection command",
-        ["cloudflared 版本"]="cloudflared version", ["正在读取…"]="Reading…", ["检查更新"]="Check for updates", ["凭据安全"]="Credential security", ["API Token 仅在当前操作的内存中使用，操作后立即清空；不会写入配置或分享文件。cloudflared 账户凭据保存在当前系统用户目录。"]="API tokens are held in memory only and cleared after each operation. They are never written to settings or share files. cloudflared account credentials stay in the current user's profile."
+        ["cloudflared 版本"]="cloudflared version", ["正在读取…"]="Reading…", ["检查更新"]="Check for updates", ["凭据安全"]="Credential security", ["API Token 仅在当前操作的内存中使用，操作后立即清空；不会写入配置或分享文件。账户凭据、应用设置和连接记录保存在程序目录下的 config 文件夹。"]="API tokens are held in memory only and cleared after each operation. They are never written to settings or share files. Account credentials, app settings, and recent connections are stored in the config folder beside the application."
     };
     // Several controls intentionally share the same English caption (for example the
     // navigation item and action button both use "Publish"). Keep the first Chinese
@@ -50,6 +52,11 @@ public static class LocalizationService
         var map = IsEnglish ? ZhToEn : EnToZh;
         foreach (var control in new[] { root }.Concat(root.GetVisualDescendants().OfType<Control>()))
         {
+            if (control is PlatformTools.App.Controls.ActionCard card)
+            {
+                if (map.TryGetValue(card.Heading, out var heading)) card.Heading = heading;
+                if (map.TryGetValue(card.Description, out var description)) card.Description = description;
+            }
             if (control is TextBlock text && text.Text is { } t && map.TryGetValue(t, out var translated)) text.Text = translated;
             if (control is ContentControl content && content.Content is string c && map.TryGetValue(c, out var translatedContent)) content.Content = translatedContent;
             if (control is TextBox box && box.PlaceholderText is { } p && map.TryGetValue(p, out var translatedPlaceholder)) box.PlaceholderText = translatedPlaceholder;

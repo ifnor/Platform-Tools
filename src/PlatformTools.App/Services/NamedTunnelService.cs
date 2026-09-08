@@ -18,32 +18,6 @@ public sealed class NamedTunnelService : IAsyncDisposable
     public event EventHandler<string>? LogReceived;
     public bool IsRunning => _process is { HasExited: false };
 
-    public async Task LoginAsync()
-    {
-        var executable = Path.Combine(AppContext.BaseDirectory, "tools", OperatingSystem.IsWindows() ? "cloudflared.exe" : "cloudflared");
-        if (!File.Exists(executable)) throw new FileNotFoundException("未找到 cloudflared。", executable);
-
-        var info = new ProcessStartInfo
-        {
-            FileName = executable,
-            UseShellExecute = true,
-            RedirectStandardOutput = false,
-            RedirectStandardError = false,
-            CreateNoWindow = false
-        };
-        info.ArgumentList.Add("tunnel");
-        info.ArgumentList.Add("login");
-
-        using var process = new Process { StartInfo = info };
-        if (!process.Start()) throw new InvalidOperationException("无法启动 cloudflared login。");
-        
-        await process.WaitForExitAsync();
-
-        var certPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".cloudflared", "cert.pem");
-        if (!File.Exists(certPath))
-            throw new InvalidOperationException("授权完成但未找到 cert.pem，请重试。");
-    }
-
     public async Task<NamedTunnelResult> CreateAndStartAsync(string name, string hostname, string serviceUrl)
     {
         await StopAsync();
@@ -55,8 +29,11 @@ public sealed class NamedTunnelService : IAsyncDisposable
             if (string.IsNullOrWhiteSpace(tunnelId)) throw new InvalidOperationException("隧道已创建，但没有找到隧道 ID。");
         }
 
-        await RunCommandAsync(["tunnel", "route", "dns", "--overwrite-dns", tunnelId, hostname]);
+        await EnsureCredentialsAsync(tunnelId,
+            AppPaths.Current.CredentialsDirectory,
+            arguments => RunCommandAsync(arguments, logOutput: false));
         var (configPath, accountId) = CreateConfig(tunnelId, hostname, serviceUrl);
+        await RunCommandAsync(["tunnel", "route", "dns", "--overwrite-dns", tunnelId, hostname]);
         StartLongRunning(["tunnel", "--config", configPath, "run", tunnelId]);
         return new NamedTunnelResult(tunnelId, configPath, accountId);
     }
@@ -84,18 +61,51 @@ public sealed class NamedTunnelService : IAsyncDisposable
         finally { process.Dispose(); }
     }
 
-    private async Task<string> RunCommandAsync(string[] arguments)
+    internal static async Task EnsureCredentialsAsync(string tunnelId, string directory, Func<string[], Task<string>> runCommand)
+    {
+        if (!Guid.TryParse(tunnelId, out _)) throw new InvalidDataException("隧道 ID 无效。");
+        var credentials = Path.Combine(directory, tunnelId + ".json");
+        if (File.Exists(credentials)) return;
+
+        Directory.CreateDirectory(directory);
+        var temporaryPath = Path.Combine(directory, tunnelId + "." + Guid.NewGuid().ToString("N") + ".tmp");
+        try
+        {
+            await runCommand(["tunnel", "token", "--cred-file", temporaryPath, tunnelId]);
+            using var json = JsonDocument.Parse(await File.ReadAllTextAsync(temporaryPath));
+            var root = json.RootElement;
+            if (!root.TryGetProperty("TunnelID", out var id) ||
+                !Guid.TryParse(id.GetString(), out var recoveredId) || recoveredId != Guid.Parse(tunnelId) ||
+                !root.TryGetProperty("AccountTag", out var account) || string.IsNullOrWhiteSpace(account.GetString()) ||
+                !root.TryGetProperty("TunnelSecret", out var secret) || string.IsNullOrWhiteSpace(secret.GetString()))
+                throw new InvalidDataException("隧道凭据无效。");
+            if (!OperatingSystem.IsWindows()) File.SetUnixFileMode(temporaryPath, UnixFileMode.UserRead | UnixFileMode.UserWrite);
+            File.Move(temporaryPath, credentials, overwrite: false);
+        }
+        catch (Exception ex) when (ex is IOException or InvalidDataException or InvalidOperationException or JsonException or UnauthorizedAccessException)
+        {
+            // Do not propagate command output: it may contain a tunnel token.
+            throw new InvalidOperationException("无法获取此隧道的运行凭据。请确认当前 Cloudflare 登录账户拥有该隧道；也可从原设备恢复凭据 JSON，或使用新的隧道名称创建隧道。");
+        }
+        finally
+        {
+            if (File.Exists(temporaryPath)) File.Delete(temporaryPath);
+        }
+    }
+
+    private async Task<string> RunCommandAsync(string[] arguments, bool logOutput = true)
     {
         var info = CreateStartInfo(arguments);
         using var process = new Process { StartInfo = info };
-        var output = new StringBuilder();
-        process.OutputDataReceived += (_, e) => Receive(e.Data, output);
-        process.ErrorDataReceived += (_, e) => Receive(e.Data, output);
         if (!process.Start()) throw new InvalidOperationException("无法启动 cloudflared。");
-        process.BeginOutputReadLine(); process.BeginErrorReadLine();
+        var stdoutTask = process.StandardOutput.ReadToEndAsync();
+        var stderrTask = process.StandardError.ReadToEndAsync();
         await process.WaitForExitAsync();
-        if (process.ExitCode != 0) throw new InvalidOperationException(output.ToString().Trim());
-        return output.ToString();
+        var stdout = await stdoutTask;
+        var stderr = await stderrTask;
+        if (logOutput) { Receive(stdout); Receive(stderr); }
+        if (process.ExitCode != 0) throw new InvalidOperationException((stdout + stderr).Trim());
+        return string.IsNullOrWhiteSpace(stdout) ? stderr : stdout;
     }
 
     private void StartLongRunning(string[] arguments)
@@ -111,18 +121,19 @@ public sealed class NamedTunnelService : IAsyncDisposable
         var executable = Path.Combine(AppContext.BaseDirectory, "tools", OperatingSystem.IsWindows() ? "cloudflared.exe" : "cloudflared");
         if (!File.Exists(executable)) throw new FileNotFoundException("未找到 cloudflared。", executable);
         var info = new ProcessStartInfo { FileName = executable, UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true, CreateNoWindow = true };
+        AppPaths.Current.ConfigureCloudflared(info);
         foreach (var argument in arguments) info.ArgumentList.Add(argument);
         return info;
     }
 
     private static (string ConfigPath, string AccountId) CreateConfig(string tunnelId, string hostname, string serviceUrl)
     {
-        var credentials = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".cloudflared", tunnelId + ".json");
-        if (!File.Exists(credentials)) throw new FileNotFoundException("没有找到隧道凭据，请重新登录 Cloudflare。", credentials);
+        var credentials = Path.Combine(AppPaths.Current.CredentialsDirectory, tunnelId + ".json");
+        if (!File.Exists(credentials)) throw new FileNotFoundException("没有找到隧道凭据，请重试发布以获取凭据。", credentials);
         using var credentialJson = JsonDocument.Parse(File.ReadAllText(credentials));
         var accountId = credentialJson.RootElement.TryGetProperty("AccountTag", out var tag) ? tag.GetString() : null;
         if (string.IsNullOrWhiteSpace(accountId)) throw new InvalidDataException("隧道凭据中缺少 Cloudflare Account ID。");
-        var directory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "PlatformTools", "tunnels", tunnelId);
+        var directory = Path.Combine(AppPaths.Current.TunnelsDirectory, tunnelId);
         Directory.CreateDirectory(directory);
         var path = Path.Combine(directory, "config.yml");
         static string Quote(string value) => "'" + value.Replace("'", "''") + "'";
