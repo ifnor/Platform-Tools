@@ -45,6 +45,14 @@ All persistent app data is stored in `config` beside the executable, independent
 
 On first use, missing settings and credentials are copied from the previous user-profile locations. Existing portable files take precedence, and the original files are retained. Keep the entire `config` directory when upgrading or moving the app; use a writable application directory. API tokens are still kept only in memory. The `config` directory contains secrets and must not be included in shared release packages.
 
+## Application updates
+
+Settings → Software update checks stable releases from `ifnor/Platform-Tools` when first opened. You can also check manually, view release notes, and choose whether to download. The app selects the package for its operating system and process architecture and verifies it against the release's `SHA256SUMS.txt`. Drafts, prereleases, and older versions are ignored.
+
+On Windows, a confirmed update downloads and verifies the portable package, stops active services, replaces application files, and restarts the app. The `config` directory, credentials, and service definitions are preserved. If file replacement fails, the updater restores the previous files. Backups remain under `config/updates` for recovery; the next Settings visit shows the installation result. Use a writable installation directory.
+
+On macOS and Linux, the app downloads and verifies the DMG or AppImage and opens its directory for manual installation. Private repository access supports an optional GitHub token held only in memory. Existing versions without this feature need one manual installation; subsequent newer tagged releases can be discovered in Settings.
+
 ## Supported packages
 
 | Platform | Architectures | Outputs |

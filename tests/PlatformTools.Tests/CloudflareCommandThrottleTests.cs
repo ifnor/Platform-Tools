@@ -63,4 +63,32 @@ public sealed class CloudflareCommandThrottleTests
         }
         finally { if (Directory.Exists(directory)) Directory.Delete(directory, true); }
     }
+
+    [Theory]
+    [InlineData("null")]
+    [InlineData("[]")]
+    [InlineData(" \n null \n")]
+    public async Task SuccessfulEmptyLookupAllowsNewTunnelAndAccountVerification(string output)
+    {
+        Assert.Empty(NamedTunnelService.ParseTunnelList(output));
+        Assert.Null(await NamedTunnelService.FindTunnelIdAsync("web", _ => Task.FromResult(output)));
+    }
+
+    [Theory]
+    [InlineData("{}")]
+    [InlineData("42")]
+    [InlineData("[null]")]
+    [InlineData("[{\"name\":\"web\",\"id\":null}]")]
+    public async Task InvalidListShapeDoesNotBecomeMissingTunnel(string output)
+    {
+        await Assert.ThrowsAsync<InvalidDataException>(() => NamedTunnelService.FindTunnelIdAsync("web", _ => Task.FromResult(output)));
+    }
+
+    [Fact]
+    public async Task FailedLookupDoesNotBecomeEmptyList()
+    {
+        var failure = new CloudflareRateLimitException("HTTP 429");
+        Assert.Same(failure, await Assert.ThrowsAsync<CloudflareRateLimitException>(() =>
+            NamedTunnelService.FindTunnelIdAsync("web", _ => throw failure)));
+    }
 }

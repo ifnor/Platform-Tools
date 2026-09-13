@@ -1,0 +1,19 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="PlatformTools.App.Controls.AppUpdateCard">
+  <Border Classes="surface" Padding="24" Margin="0,8,0,0">
+    <StackPanel Spacing="12">
+      <TextBlock Text="软件更新" FontSize="18" FontWeight="SemiBold"/>
+      <TextBlock x:Name="InstalledText" Classes="muted" TextWrapping="Wrap"/>
+      <TextBlock Text="更新来源：ifnor/Platform-Tools · GitHub Releases" Classes="muted" FontSize="12" TextWrapping="Wrap"/>
+      <TextBlock x:Name="UpdateStatus" TextWrapping="Wrap"/>
+      <Expander Header="版本说明" x:Name="ReleaseNotes" IsVisible="False" HorizontalAlignment="Stretch"><ScrollViewer MaxHeight="180"><TextBlock x:Name="NotesText" TextWrapping="Wrap" FontSize="12"/></ScrollViewer></Expander>
+      <ProgressBar x:Name="DownloadProgress" IsVisible="False" Minimum="0" Maximum="100" Height="5"/>
+      <WrapPanel>
+        <Button x:Name="CheckButton" Classes="secondary" Content="检查软件更新" Click="Check_Click" Margin="0,0,10,4"/>
+        <Button x:Name="InstallButton" Classes="primary" Content="下载并重启更新" Click="Install_Click" IsVisible="False" Margin="0,0,10,4"/>
+        <Button x:Name="CancelButton" Classes="quiet" Content="取消" Click="Cancel_Click" IsVisible="False" Margin="0,0,10,4"/>
+        <Button Classes="quiet" Content="打开发布页" Click="OpenRelease_Click" Margin="0,0,0,4"/>
+      </WrapPanel>
+      <Expander Header="私有仓库访问（可选）" HorizontalAlignment="Stretch"><StackPanel Spacing="8"><TextBlock Classes="muted" FontSize="12" Text="GitHub Token 只需 Contents 读取权限，仅用于本次会话，不保存。" TextWrapping="Wrap"/><TextBox x:Name="TokenBox" PasswordChar="●" PlaceholderText="GitHub Token"/></StackPanel></Expander>
+    </StackPanel>
+  </Border>
+</UserControl>

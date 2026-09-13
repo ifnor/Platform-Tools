@@ -154,5 +154,6 @@ internal sealed class PublishedServiceManager
         catch { _shuttingDown = false; throw; }
     }
     public void RefreshLabels() { foreach (var item in Items) item.Notify(); Changed?.Invoke(this, EventArgs.Empty); }
+    internal void CancelShutdown() => _shuttingDown = false;
     private void Notify(PublishedService item) { item.Notify(); Changed?.Invoke(this, EventArgs.Empty); }
 }

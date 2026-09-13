@@ -66,6 +66,28 @@ public partial class MainWindow : Window
         finally { _confirmingClose = false; }
     }
 
+    internal async System.Threading.Tasks.Task InstallApplicationUpdateAsync(string planPath)
+    {
+        IsEnabled = false;
+        _confirmingClose = true;
+        try
+        {
+            CloudflareAccountService.Current.Cancel();
+            await _publish.StopAllAsync();
+            await _connect.StopAllAsync();
+            AppUpdateInstaller.Launch(planPath);
+            _allowClose = true;
+            Close();
+        }
+        catch
+        {
+            PublishedServiceManager.Current.CancelShutdown();
+            IsEnabled = true;
+            throw;
+        }
+        finally { _confirmingClose = false; }
+    }
+
     private void AccountChanged(object? sender, System.EventArgs e) => Avalonia.Threading.Dispatcher.UIThread.Post(RenderAccountState);
     private void RenderAccountState()
     {

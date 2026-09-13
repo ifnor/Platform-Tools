@@ -135,8 +135,8 @@ internal sealed class CloudflareAccountService : IDisposable
                 if (CloudflareCommandThrottle.IsRateLimited(output)) throw new InvalidOperationException("HTTP 429 Too Many Requests");
                 return false;
             }
-            using var json = JsonDocument.Parse(await stdout);
-            return json.RootElement.ValueKind == JsonValueKind.Array;
+            NamedTunnelService.ParseTunnelList(await stdout);
+            return true;
         }
         finally
         {

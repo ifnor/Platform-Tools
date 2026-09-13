@@ -74,13 +74,29 @@ public sealed class NamedTunnelService : IAsyncDisposable
         try
         {
             var output = await runCommand(["tunnel", "list", "--name", name, "--output", "json"]);
-            using var json = JsonDocument.Parse(output);
-            foreach (var item in json.RootElement.EnumerateArray())
+            foreach (var item in ParseTunnelList(output))
                 if (item.TryGetProperty("name", out var tunnelName) && string.Equals(tunnelName.GetString(), name, StringComparison.OrdinalIgnoreCase)
                     && item.TryGetProperty("id", out var id)) return id.GetString();
         }
         catch (JsonException) { throw new InvalidDataException("无法解析 Cloudflare 隧道列表，已停止启动；不会据此创建新隧道。"); }
         return null;
+    }
+
+    internal static JsonElement[] ParseTunnelList(string output)
+    {
+        using var json = JsonDocument.Parse(output);
+        // cloudflared serializes an empty Go slice as null after a successful lookup.
+        if (json.RootElement.ValueKind == JsonValueKind.Null) return [];
+        if (json.RootElement.ValueKind != JsonValueKind.Array)
+            throw new InvalidDataException("Cloudflare 隧道列表格式异常，已停止操作，请稍后重试。");
+        var items = json.RootElement.EnumerateArray().ToArray();
+        foreach (var item in items)
+            if (item.ValueKind != JsonValueKind.Object ||
+                !item.TryGetProperty("name", out var name) || name.ValueKind != JsonValueKind.String ||
+                !item.TryGetProperty("id", out var id) || id.ValueKind != JsonValueKind.String ||
+                !Guid.TryParse(id.GetString(), out _))
+                throw new InvalidDataException("Cloudflare 隧道列表内容异常，已停止操作，请稍后重试。");
+        return items.Select(item => item.Clone()).ToArray();
     }
 
     public async Task StopAsync()

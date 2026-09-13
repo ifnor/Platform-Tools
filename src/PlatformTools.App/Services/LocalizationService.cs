@@ -10,6 +10,10 @@ public static class LocalizationService
 {
     private static readonly Dictionary<string, string> ZhToEn = new(StringComparer.Ordinal)
     {
+        ["软件更新"]="Application updates", ["版本说明"]="Release notes", ["检查软件更新"]="Check app updates", ["下载并重启更新"]="Download and restart",
+        ["打开发布页"]="Open releases", ["下载安装包"]="Download package", ["私有仓库访问（可选）"]="Private repository access (optional)",
+        ["更新来源：ifnor/Platform-Tools · GitHub Releases"]="Source: ifnor/Platform-Tools · GitHub Releases",
+        ["GitHub Token 只需 Contents 读取权限，仅用于本次会话，不保存。"]="GitHub token requires Contents read access. Used only for this session; never saved.",
         ["服务总数"]="Total services", ["运行中"]="Running", ["异常"]="Failed",
         ["新增服务"]="Add service", ["多个服务可同时运行，配置会自动保留。"]="Run multiple services at once. Configurations are saved automatically.",
         ["账号设置"]="Account settings", ["还没有发布服务"]="No services yet", ["添加本地网页、接口或远程连接，按需独立启动。"]="Add a local website, API, or remote connection and start each independently.",
