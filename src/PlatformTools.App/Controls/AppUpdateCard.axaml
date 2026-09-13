@@ -13,7 +13,7 @@
         <Button x:Name="CancelButton" Classes="quiet" Content="取消" Click="Cancel_Click" IsVisible="False" Margin="0,0,10,4"/>
         <Button Classes="quiet" Content="打开发布页" Click="OpenRelease_Click" Margin="0,0,0,4"/>
       </WrapPanel>
-      <Expander Header="私有仓库访问（可选）" HorizontalAlignment="Stretch"><StackPanel Spacing="8"><TextBlock Classes="muted" FontSize="12" Text="GitHub Token 只需 Contents 读取权限，仅用于本次会话，不保存。" TextWrapping="Wrap"/><TextBox x:Name="TokenBox" PasswordChar="●" PlaceholderText="GitHub Token"/></StackPanel></Expander>
+      <Expander IsVisible="False" Header="私有仓库访问（可选）" HorizontalAlignment="Stretch"><StackPanel Spacing="8"><TextBlock Classes="muted" FontSize="12" Text="GitHub Token 只需 Contents 读取权限，仅用于本次会话，不保存。" TextWrapping="Wrap"/><TextBox x:Name="TokenBox" PasswordChar="●" PlaceholderText="GitHub Token"/></StackPanel></Expander>
     </StackPanel>
   </Border>
 </UserControl>
