@@ -5,18 +5,16 @@ namespace PlatformTools.Tests;
 public sealed class CloudflareCommandThrottleTests
 {
     [Fact]
-    public async Task RateLimitBlocksSubsequentCallsUntilCooldownExpires()
+    public async Task RateLimitAllowsImmediateManualRetryWithoutAutomaticRetry()
     {
-        var now = DateTimeOffset.UtcNow;
-        var throttle = new CloudflareCommandThrottle(() => now);
+        var throttle = new CloudflareCommandThrottle();
         var calls = 0;
         var error = await Assert.ThrowsAsync<CloudflareRateLimitException>(() => throttle.RunAsync<string>(() =>
         { calls++; throw new InvalidOperationException("Error Parsing page 1: API call to list tunnels failed with status 429: Too Many Requests"); }, default));
         Assert.Contains("429", error.Message);
-        await Assert.ThrowsAsync<CloudflareRateLimitException>(() => throttle.RunAsync(() => { calls++; return Task.FromResult("ok"); }, default));
         Assert.Equal(1, calls);
-        now = now.AddMinutes(5);
-        Assert.Equal("ok", await throttle.RunAsync(() => Task.FromResult("ok"), default));
+        Assert.Equal("ok", await throttle.RunAsync(() => { calls++; return Task.FromResult("ok"); }, default));
+        Assert.Equal(2, calls);
     }
     [Fact]
     public async Task ConcurrentRequestsAreSerializedAndCancelledWaitersDoNotRun()
@@ -34,7 +32,7 @@ public sealed class CloudflareCommandThrottleTests
         Assert.Equal("third", await throttle.RunAsync(() => Task.FromResult("third"), default));
     }
     [Fact]
-    public async Task OtherErrorsDoNotStartCooldown()
+    public async Task OtherErrorsArePreservedAndAllowSubsequentCalls()
     {
         var throttle = new CloudflareCommandThrottle();
         var original = new InvalidOperationException("DNS conflict");
