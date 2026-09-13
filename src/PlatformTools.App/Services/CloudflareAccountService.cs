@@ -51,7 +51,7 @@ internal sealed class CloudflareAccountService : IDisposable
         State = AccountState.Checking;
         Changed?.Invoke(this, EventArgs.Empty);
         try { State = await _verify(operation.Token) ? AccountState.SignedIn : AccountState.Unavailable; }
-        catch (Exception) { State = AccountState.Unavailable; }
+        catch (Exception ex) { State = AccountState.Unavailable; Error = ex.Message; }
         finally { _operation = null; Changed?.Invoke(this, EventArgs.Empty); }
     }
 
@@ -113,11 +113,14 @@ internal sealed class CloudflareAccountService : IDisposable
     }
 
     private async Task<bool> VerifyAsync(CancellationToken token)
+        => await CloudflareCommandThrottle.Current.RunAsync(() => VerifyCoreAsync(token), token);
+
+    private async Task<bool> VerifyCoreAsync(CancellationToken token)
     {
         var executable = Path.Combine(AppContext.BaseDirectory, "tools", OperatingSystem.IsWindows() ? "cloudflared.exe" : "cloudflared");
         var info = new ProcessStartInfo(executable) { CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true };
         _paths.ConfigureCloudflared(info);
-        foreach (var argument in new[] { "tunnel", "list", "--output", "json" }) info.ArgumentList.Add(argument);
+        foreach (var argument in new[] { "tunnel", "list", "--name", "__platformtools_account_check__", "--output", "json" }) info.ArgumentList.Add(argument);
         using var process = new Process { StartInfo = info };
         if (!process.Start()) return false;
         var stdout = process.StandardOutput.ReadToEndAsync();
@@ -126,7 +129,12 @@ internal sealed class CloudflareAccountService : IDisposable
         {
             await process.WaitForExitAsync(token);
             await Task.WhenAll(stdout, stderr);
-            if (process.ExitCode != 0) return false;
+            if (process.ExitCode != 0)
+            {
+                var output = (await stdout) + (await stderr);
+                if (CloudflareCommandThrottle.IsRateLimited(output)) throw new InvalidOperationException("HTTP 429 Too Many Requests");
+                return false;
+            }
             using var json = JsonDocument.Parse(await stdout);
             return json.RootElement.ValueKind == JsonValueKind.Array;
         }

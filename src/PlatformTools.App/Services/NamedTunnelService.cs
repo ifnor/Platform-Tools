@@ -67,16 +67,19 @@ public sealed class NamedTunnelService : IAsyncDisposable
     }
 
     private async Task<string?> FindTunnelIdAsync(string name, CancellationToken cancellationToken)
+        => await FindTunnelIdAsync(name, arguments => RunCommandAsync(arguments, cancellationToken: cancellationToken));
+
+    internal static async Task<string?> FindTunnelIdAsync(string name, Func<string[], Task<string>> runCommand)
     {
         try
         {
-            var output = await RunCommandAsync(["tunnel", "list", "--output", "json"], cancellationToken: cancellationToken);
+            var output = await runCommand(["tunnel", "list", "--name", name, "--output", "json"]);
             using var json = JsonDocument.Parse(output);
             foreach (var item in json.RootElement.EnumerateArray())
                 if (item.TryGetProperty("name", out var tunnelName) && string.Equals(tunnelName.GetString(), name, StringComparison.OrdinalIgnoreCase)
                     && item.TryGetProperty("id", out var id)) return id.GetString();
         }
-        catch (JsonException) { }
+        catch (JsonException) { throw new InvalidDataException("无法解析 Cloudflare 隧道列表，已停止启动；不会据此创建新隧道。"); }
         return null;
     }
 
@@ -110,7 +113,7 @@ public sealed class NamedTunnelService : IAsyncDisposable
             if (!OperatingSystem.IsWindows()) File.SetUnixFileMode(temporaryPath, UnixFileMode.UserRead | UnixFileMode.UserWrite);
             File.Move(temporaryPath, credentials, overwrite: false);
         }
-        catch (Exception ex) when (ex is IOException or InvalidDataException or InvalidOperationException or JsonException or UnauthorizedAccessException)
+        catch (Exception ex) when (ex is not CloudflareRateLimitException && ex is IOException or InvalidDataException or InvalidOperationException or JsonException or UnauthorizedAccessException)
         {
             // Do not propagate command output: it may contain a tunnel token.
             throw new InvalidOperationException("无法获取此隧道的运行凭据。请确认当前 Cloudflare 登录账户拥有该隧道；也可从原设备恢复凭据 JSON，或使用新的隧道名称创建隧道。");
@@ -122,6 +125,9 @@ public sealed class NamedTunnelService : IAsyncDisposable
     }
 
     private async Task<string> RunCommandAsync(string[] arguments, bool logOutput = true, CancellationToken cancellationToken = default)
+        => await CloudflareCommandThrottle.Current.RunAsync(() => RunCommandCoreAsync(arguments, logOutput, cancellationToken), cancellationToken);
+
+    private async Task<string> RunCommandCoreAsync(string[] arguments, bool logOutput, CancellationToken cancellationToken)
     {
         var info = CreateStartInfo(arguments);
         using var process = new Process { StartInfo = info };
