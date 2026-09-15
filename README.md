@@ -1,6 +1,9 @@
+<img width="1586" height="992" alt="home-concept-v1" src="./design/home-concept-v1.png" />
+
 # Platform Tools
 
 Platform Tools is a beginner-friendly, cross-platform desktop interface for Cloudflare Tunnel. It publishes local web, SSH, RDP, SMB, database, and custom TCP services without requiring users to learn `cloudflared` commands.
+
 
 ## What users can do
 
